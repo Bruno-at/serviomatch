@@ -25,56 +25,6 @@ interface ScreenShareInfo {
   isLocal: boolean;
 }
 
-const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compact?: boolean }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [hasVideo, setHasVideo] = useState(false);
-
-  useEffect(() => {
-    const handleTrack = () => {
-      const videoTrack = Array.from(participant.trackPublications.values()).find(
-        (pub) => pub.track && pub.source === Track.Source.Camera
-      );
-      const audioTrack = Array.from(participant.trackPublications.values()).find(
-        (pub) => pub.track && pub.source === Track.Source.Microphone
-      );
-
-      if (videoTrack?.track && videoRef.current) {
-        videoTrack.track.attach(videoRef.current);
-        setHasVideo(true);
-      } else {
-        setHasVideo(false);
-      }
-
-      if (audioTrack?.track && audioRef.current && !isLocal) {
-        audioTrack.track.attach(audioRef.current);
-      }
-    };
-
-    handleTrack();
-
-    participant.on("trackSubscribed" as any, handleTrack);
-    participant.on("trackUnsubscribed" as any, handleTrack);
-    participant.on("trackMuted" as any, handleTrack);
-    participant.on("trackUnmuted" as any, handleTrack);
-    if (isLocal) {
-      participant.on("localTrackPublished" as any, handleTrack);
-      participant.on("localTrackUnpublished" as any, handleTrack);
-    }
-
-    return () => {
-      participant.off("trackSubscribed" as any, handleTrack);
-      participant.off("trackUnsubscribed" as any, handleTrack);
-      participant.off("trackMuted" as any, handleTrack);
-      participant.off("trackUnmuted" as any, handleTrack);
-      if (isLocal) {
-        participant.off("localTrackPublished" as any, handleTrack);
-        participant.off("localTrackUnpublished" as any, handleTrack);
-      }
-    };
-  }, [participant, isLocal]);
-
-
 const qualityBars = (quality: ConnectionQuality) => {
   const bars = [
     { filled: quality !== ConnectionQuality.Unknown },
