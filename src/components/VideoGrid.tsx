@@ -241,6 +241,17 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.9 }}
+          onClick={toggleScreenShare}
+          className={`flex h-11 w-11 items-center justify-center rounded-full ${screenSharing ? "bg-primary" : "bg-muted"}`}
+        >
+          {screenSharing ? (
+            <ScreenShareOff className="h-5 w-5 text-primary-foreground" />
+          ) : (
+            <ScreenShare className="h-5 w-5 text-foreground" />
+          )}
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={handleDisconnect}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive"
         >
