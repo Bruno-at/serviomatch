@@ -10,7 +10,7 @@ import {
   ConnectionState,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff, Users } from "lucide-react";
 
 interface VideoGridProps {
   token: string;
@@ -196,6 +196,12 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Participant count overlay */}
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-1">
+        <Users className="h-3.5 w-3.5 text-primary-foreground" />
+        <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
+      </div>
+
       {/* Video grid */}
       <div className={`flex-1 overflow-y-auto p-2 grid ${gridCols} gap-2 auto-rows-min`}>
         <AnimatePresence>
