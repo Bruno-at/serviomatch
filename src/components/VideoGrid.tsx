@@ -3,11 +3,8 @@ import {
   Room,
   RoomEvent,
   Track,
-  RemoteTrackPublication,
-  RemoteParticipant,
-  LocalParticipant,
   Participant,
-  ConnectionState,
+  ConnectionQuality,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff, Users } from "lucide-react";
