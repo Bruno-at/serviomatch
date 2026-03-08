@@ -10,7 +10,7 @@ import {
   ConnectionState,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff } from "lucide-react";
 
 interface VideoGridProps {
   token: string;
