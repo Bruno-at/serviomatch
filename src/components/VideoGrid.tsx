@@ -57,6 +57,7 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
+  const [micMuted, setMicMuted] = useState(true);
   const [quality, setQuality] = useState<ConnectionQuality>(participant.connectionQuality);
 
   useEffect(() => {
@@ -78,6 +79,9 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
       if (audioTrack?.track && audioRef.current && !isLocal) {
         audioTrack.track.attach(audioRef.current);
       }
+
+      // Update mic muted state
+      setMicMuted(!audioTrack?.track || audioTrack.isMuted);
     };
 
     const handleQuality = () => setQuality(participant.connectionQuality);
@@ -122,6 +126,12 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
         </div>
       )}
       <audio ref={audioRef} autoPlay />
+      {/* Mic muted indicator */}
+      {micMuted && (
+        <div className="absolute top-2 right-2 rounded-full bg-destructive/90 backdrop-blur-sm p-1.5">
+          <MicOff className="h-3 w-3 text-primary-foreground" />
+        </div>
+      )}
       {/* Name + quality bar */}
       <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
         <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
