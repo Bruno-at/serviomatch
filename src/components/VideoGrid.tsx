@@ -23,7 +23,12 @@ interface ParticipantTile {
   isLocal: boolean;
 }
 
-const VideoTile = ({ participant, isLocal }: ParticipantTile) => {
+interface ScreenShareInfo {
+  participant: Participant;
+  isLocal: boolean;
+}
+
+const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compact?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -73,28 +78,69 @@ const VideoTile = ({ participant, isLocal }: ParticipantTile) => {
   }, [participant, isLocal]);
 
   const name = participant.name || participant.identity || "User";
+  const size = compact ? "h-10 w-10 text-sm" : "h-14 w-14 text-xl";
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-muted aspect-[3/4]">
+    <div className={`relative rounded-2xl overflow-hidden bg-muted ${compact ? "aspect-square" : "aspect-[3/4]"}`}>
       {hasVideo ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={isLocal}
-          className="h-full w-full object-cover"
-        />
+        <video ref={videoRef} autoPlay playsInline muted={isLocal} className="h-full w-full object-cover" />
       ) : (
         <div className="h-full w-full flex items-center justify-center bg-muted">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-xl font-bold text-primary font-display">
+          <div className={`flex ${size} items-center justify-center rounded-full bg-primary/20 font-bold text-primary font-display`}>
             {name.charAt(0).toUpperCase()}
           </div>
         </div>
       )}
       <audio ref={audioRef} autoPlay />
-      <div className="absolute bottom-2 left-2 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-0.5">
+      <div className="absolute bottom-1.5 left-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
         <span className="text-[10px] font-semibold text-primary-foreground">
           {isLocal ? "You" : name}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const attach = () => {
+      const screenTrack = Array.from(participant.trackPublications.values()).find(
+        (pub) => pub.track && pub.source === Track.Source.ScreenShare
+      );
+      if (screenTrack?.track && videoRef.current) {
+        screenTrack.track.attach(videoRef.current);
+      }
+    };
+
+    attach();
+    participant.on("trackSubscribed" as any, attach);
+    participant.on("trackUnsubscribed" as any, attach);
+    if (isLocal) {
+      participant.on("localTrackPublished" as any, attach);
+      participant.on("localTrackUnpublished" as any, attach);
+    }
+
+    return () => {
+      participant.off("trackSubscribed" as any, attach);
+      participant.off("trackUnsubscribed" as any, attach);
+      if (isLocal) {
+        participant.off("localTrackPublished" as any, attach);
+        participant.off("localTrackUnpublished" as any, attach);
+      }
+    };
+  }, [participant, isLocal]);
+
+  const name = participant.name || participant.identity || "User";
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden bg-foreground/10 w-full h-full">
+      <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-contain" />
+      <div className="absolute top-2 left-2 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-0.5 flex items-center gap-1.5">
+        <ScreenShare className="h-3 w-3 text-primary-foreground" />
+        <span className="text-[10px] font-semibold text-primary-foreground">
+          {isLocal ? "Your screen" : `${name}'s screen`}
         </span>
       </div>
     </div>
@@ -187,39 +233,70 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
     onDisconnect();
   };
 
+  // Detect active screen shares
+  const screenSharer = participants.find((tile) => {
+    return Array.from(tile.participant.trackPublications.values()).some(
+      (pub) => pub.track && pub.source === Track.Source.ScreenShare
+    );
+  });
+
+  const isPiP = !!screenSharer;
+
   const gridCols =
-    participants.length <= 1
-      ? "grid-cols-1"
-      : participants.length <= 4
-        ? "grid-cols-2"
-        : "grid-cols-3";
+    !isPiP
+      ? participants.length <= 1
+        ? "grid-cols-1"
+        : participants.length <= 4
+          ? "grid-cols-2"
+          : "grid-cols-3"
+      : "";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Participant count overlay */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-1">
         <Users className="h-3.5 w-3.5 text-primary-foreground" />
         <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
       </div>
 
-      {/* Video grid */}
-      <div className={`flex-1 overflow-y-auto p-2 grid ${gridCols} gap-2 auto-rows-min`}>
-        <AnimatePresence>
-          {participants.map((tile) => (
-            <motion.div
-              key={tile.participant.identity}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-            >
-              <VideoTile
-                participant={tile.participant}
-                isLocal={tile.isLocal}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {isPiP ? (
+        /* PiP layout: screen share main + camera thumbnails */
+        <div className="flex-1 flex flex-col overflow-hidden p-2 gap-2">
+          {/* Main screen share */}
+          <div className="flex-1 min-h-0">
+            <ScreenShareTile participant={screenSharer.participant} isLocal={screenSharer.isLocal} />
+          </div>
+          {/* Camera thumbnails */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {participants.map((tile) => (
+              <motion.div
+                key={tile.participant.identity}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-20 shrink-0"
+              >
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} compact />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Standard grid layout */
+        <div className={`flex-1 overflow-y-auto p-2 grid ${gridCols} gap-2 auto-rows-min`}>
+          <AnimatePresence>
+            {participants.map((tile) => (
+              <motion.div
+                key={tile.participant.identity}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+              >
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-4 py-3 px-4 border-t border-border bg-card">
