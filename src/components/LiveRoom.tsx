@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Heart, Gift, Star, X, Users, Eye } from "lucide-react";
+import { ArrowLeft, Send, Gift, X, Eye, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import VideoGrid from "./VideoGrid";
 
 interface LiveRoomProps {
   room: Tables<"live_rooms">;
@@ -28,18 +29,20 @@ const giftReactions = [
 ];
 
 const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [showGifts, setShowGifts] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string }[]>([]);
   const [viewerCount, setViewerCount] = useState(room.viewer_count);
+  const [videoToken, setVideoToken] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoActive, setVideoActive] = useState(false);
+  const [joiningVideo, setJoiningVideo] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const reactionId = useRef(0);
   const isHost = user?.id === room.host_id;
-
-  // Fetch profile names cache
   const profileCache = useRef<Map<string, string>>(new Map());
 
   const getSenderName = async (senderId: string): Promise<string> => {
@@ -54,14 +57,30 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     return name;
   };
 
+  // Fetch LiveKit token
+  const joinVideo = async () => {
+    if (!session?.access_token) return;
+    setJoiningVideo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("livekit-token", {
+        body: { room_id: room.id },
+      });
+      if (error) throw error;
+      setVideoToken(data.token);
+      setVideoUrl(data.url);
+      setVideoActive(true);
+    } catch (e: any) {
+      toast.error("Failed to join video: " + (e.message || "Unknown error"));
+    } finally {
+      setJoiningVideo(false);
+    }
+  };
+
   useEffect(() => {
-    // Increment viewer count on join
     if (!isHost) {
       supabase.from("live_rooms").update({ viewer_count: viewerCount + 1 }).eq("id", room.id).then(() => {
         setViewerCount((v) => v + 1);
       });
-
-      // Send join message
       supabase.from("live_messages").insert({
         room_id: room.id,
         sender_id: user!.id,
@@ -70,7 +89,11 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       });
     }
 
-    // Fetch existing messages
+    // Auto-join video for host
+    if (isHost) {
+      joinVideo();
+    }
+
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("live_messages")
@@ -90,7 +113,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     };
     fetchMessages();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel(`live:${room.id}`)
       .on(
@@ -100,8 +122,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           const msg = payload.new as Tables<"live_messages">;
           const name = await getSenderName(msg.sender_id);
           setMessages((prev) => [...prev, { message: msg, senderName: name }]);
-
-          // Float reaction for gift messages
           if (msg.message_type === "gift") {
             const id = reactionId.current++;
             setFloatingReactions((prev) => [...prev, { id, emoji: msg.content }]);
@@ -114,7 +134,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       .subscribe();
 
     return () => {
-      // Decrement viewer on leave
       if (!isHost) {
         supabase.from("live_rooms").update({ viewer_count: Math.max(0, viewerCount - 1) }).eq("id", room.id);
       }
@@ -168,42 +187,65 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
   return (
     <div className="flex h-full flex-col relative overflow-hidden">
-      {/* Header with gradient background */}
-      <div className="relative gradient-love px-4 pt-4 pb-16">
-        <div className="flex items-center justify-between">
-          <button onClick={onLeave} className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5">
-            <ArrowLeft className="h-5 w-5 text-primary-foreground" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full bg-foreground/20 backdrop-blur-sm px-2.5 py-1">
-              <Eye className="h-3.5 w-3.5 text-primary-foreground" />
-              <span className="text-xs font-semibold text-primary-foreground">{viewerCount}</span>
-            </div>
-            <div className="flex items-center gap-1 rounded-full bg-destructive px-2.5 py-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
-              <span className="text-[10px] font-bold text-primary-foreground">LIVE</span>
+      {/* Video area */}
+      {videoActive && videoToken && videoUrl ? (
+        <div className="h-[45%] min-h-[200px] bg-foreground/5">
+          <VideoGrid
+            token={videoToken}
+            url={videoUrl}
+            onDisconnect={() => setVideoActive(false)}
+          />
+        </div>
+      ) : (
+        /* Header with gradient background */
+        <div className="relative gradient-love px-4 pt-4 pb-16">
+          <div className="flex items-center justify-between">
+            <button onClick={onLeave} className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5">
+              <ArrowLeft className="h-5 w-5 text-primary-foreground" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-full bg-foreground/20 backdrop-blur-sm px-2.5 py-1">
+                <Eye className="h-3.5 w-3.5 text-primary-foreground" />
+                <span className="text-xs font-semibold text-primary-foreground">{viewerCount}</span>
+              </div>
+              <div className="flex items-center gap-1 rounded-full bg-destructive px-2.5 py-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
+                <span className="text-[10px] font-bold text-primary-foreground">LIVE</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Host info */}
-        <div className="flex items-center gap-3 mt-4">
-          {hostAvatar ? (
-            <img src={hostAvatar} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30" />
-          ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20 text-lg font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
-              {hostName.charAt(0).toUpperCase()}
+          <div className="flex items-center gap-3 mt-4">
+            {hostAvatar ? (
+              <img src={hostAvatar} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30" />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20 text-lg font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
+                {hostName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1">
+              <p className="font-semibold text-primary-foreground text-sm">{hostName}</p>
+              <p className="text-primary-foreground/70 text-xs">{room.title}</p>
             </div>
-          )}
-          <div>
-            <p className="font-semibold text-primary-foreground text-sm">{hostName}</p>
-            <p className="text-primary-foreground/70 text-xs">{room.title}</p>
+            {!isHost && !videoActive && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={joinVideo}
+                disabled={joiningVideo}
+                className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 backdrop-blur-sm px-3 py-1.5"
+              >
+                <Video className="h-4 w-4 text-primary-foreground" />
+                <span className="text-xs font-semibold text-primary-foreground">
+                  {joiningVideo ? "Joining..." : "Join Video"}
+                </span>
+              </motion.button>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Chat area */}
-      <div className="flex-1 -mt-8 rounded-t-3xl bg-background overflow-y-auto px-4 pt-4 pb-2 relative">
+      <div className={`flex-1 ${!videoActive ? "-mt-8 rounded-t-3xl" : ""} bg-background overflow-y-auto px-4 pt-4 pb-2 relative`}>
         {/* Floating reactions */}
         <div className="absolute right-4 bottom-20 pointer-events-none">
           <AnimatePresence>
@@ -230,7 +272,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           <div className="space-y-1.5">
             {messages.map((item) => {
               const { message: msg, senderName } = item;
-
               if (msg.message_type === "join") {
                 return (
                   <p key={msg.id} className="text-xs text-muted-foreground">
@@ -238,7 +279,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                   </p>
                 );
               }
-
               if (msg.message_type === "gift") {
                 return (
                   <motion.p
@@ -253,7 +293,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                   </motion.p>
                 );
               }
-
               return (
                 <motion.div
                   key={msg.id}
