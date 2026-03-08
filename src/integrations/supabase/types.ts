@@ -35,6 +35,74 @@ export type Database = {
         }
         Relationships: []
       }
+      live_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          message_type: string
+          room_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          room_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          room_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "live_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_rooms: {
+        Row: {
+          created_at: string
+          description: string | null
+          ended_at: string | null
+          host_id: string
+          id: string
+          is_active: boolean
+          title: string
+          viewer_count: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          is_active?: boolean
+          title: string
+          viewer_count?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          viewer_count?: number
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           created_at: string

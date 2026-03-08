@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import DiscoverView from "@/components/DiscoverView";
+import LiveView from "@/components/LiveView";
 import LikesView from "@/components/LikesView";
 import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
@@ -24,6 +25,7 @@ const Index = () => {
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
       {activeTab === "discover" && <DiscoverView />}
+      {activeTab === "live" && <LiveView />}
       {activeTab === "likes" && <LikesView />}
       {activeTab === "messages" && <MessagesView />}
       {activeTab === "profile" && <ProfileView />}
