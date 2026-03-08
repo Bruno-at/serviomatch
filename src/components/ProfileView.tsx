@@ -4,10 +4,12 @@ import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
+import EditProfileView from "./EditProfileView";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -24,6 +26,16 @@ const ProfileView = () => {
       <div className="flex h-full items-center justify-center">
         <p className="text-sm text-muted-foreground">Loading profile...</p>
       </div>
+    );
+  }
+
+  if (editing) {
+    return (
+      <EditProfileView
+        profile={profile}
+        onSave={(updated) => { setProfile(updated); setEditing(false); }}
+        onCancel={() => setEditing(false)}
+      />
     );
   }
 
@@ -49,7 +61,7 @@ const ProfileView = () => {
             {profile.display_name.charAt(0).toUpperCase()}
           </div>
         )}
-        <button className="absolute bottom-0 right-0 rounded-full gradient-love p-2 shadow-card">
+        <button onClick={() => setEditing(true)} className="absolute bottom-0 right-0 rounded-full gradient-love p-2 shadow-card">
           <Camera className="h-4 w-4 text-primary-foreground" />
         </button>
       </div>
@@ -67,7 +79,9 @@ const ProfileView = () => {
       <div className="mt-6 w-full rounded-2xl bg-card p-4 shadow-card">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-semibold text-foreground">About me</h3>
-          <Edit3 className="h-4 w-4 text-muted-foreground" />
+          <button onClick={() => setEditing(true)}>
+            <Edit3 className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
         <p className="text-sm text-muted-foreground">
           {profile.bio || "No bio yet. Tell people about yourself!"}
@@ -89,6 +103,7 @@ const ProfileView = () => {
 
       <motion.button
         whileTap={{ scale: 0.97 }}
+        onClick={() => setEditing(true)}
         className="mt-6 w-full rounded-2xl gradient-love py-3.5 text-sm font-semibold text-primary-foreground shadow-card mb-24"
       >
         Edit Profile
