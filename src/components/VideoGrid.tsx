@@ -10,7 +10,7 @@ import {
   ConnectionState,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff } from "lucide-react";
 
 interface VideoGridProps {
   token: string;
@@ -106,6 +106,7 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
@@ -170,6 +171,17 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
     setMicOn(!micOn);
   };
 
+  const toggleScreenShare = async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    try {
+      await room.localParticipant.setScreenShareEnabled(!screenSharing);
+      setScreenSharing(!screenSharing);
+    } catch {
+      // User cancelled the screen share picker
+    }
+  };
+
   const handleDisconnect = () => {
     roomRef.current?.disconnect();
     onDisconnect();
@@ -225,6 +237,17 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
             <Mic className="h-5 w-5 text-foreground" />
           ) : (
             <MicOff className="h-5 w-5 text-primary-foreground" />
+          )}
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={toggleScreenShare}
+          className={`flex h-11 w-11 items-center justify-center rounded-full ${screenSharing ? "bg-primary" : "bg-muted"}`}
+        >
+          {screenSharing ? (
+            <ScreenShareOff className="h-5 w-5 text-primary-foreground" />
+          ) : (
+            <ScreenShare className="h-5 w-5 text-foreground" />
           )}
         </motion.button>
         <motion.button
