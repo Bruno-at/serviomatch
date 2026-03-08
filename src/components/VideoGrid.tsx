@@ -171,6 +171,17 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
     setMicOn(!micOn);
   };
 
+  const toggleScreenShare = async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    try {
+      await room.localParticipant.setScreenShareEnabled(!screenSharing);
+      setScreenSharing(!screenSharing);
+    } catch {
+      // User cancelled the screen share picker
+    }
+  };
+
   const handleDisconnect = () => {
     roomRef.current?.disconnect();
     onDisconnect();
