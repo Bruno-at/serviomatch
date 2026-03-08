@@ -74,6 +74,89 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
     };
   }, [participant, isLocal]);
 
+
+const qualityBars = (quality: ConnectionQuality) => {
+  const bars = [
+    { filled: quality !== ConnectionQuality.Unknown },
+    { filled: quality === ConnectionQuality.Good || quality === ConnectionQuality.Excellent },
+    { filled: quality === ConnectionQuality.Excellent },
+  ];
+  const color =
+    quality === ConnectionQuality.Excellent
+      ? "bg-green-400"
+      : quality === ConnectionQuality.Good
+        ? "bg-yellow-400"
+        : quality === ConnectionQuality.Poor
+          ? "bg-destructive"
+          : "bg-muted-foreground";
+
+  return (
+    <div className="flex items-end gap-[2px]">
+      {bars.map((bar, i) => (
+        <div
+          key={i}
+          style={{ height: `${6 + i * 3}px` }}
+          className={`w-[3px] rounded-sm ${bar.filled ? color : "bg-foreground/20"}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compact?: boolean }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [hasVideo, setHasVideo] = useState(false);
+  const [quality, setQuality] = useState<ConnectionQuality>(participant.connectionQuality);
+
+  useEffect(() => {
+    const handleTrack = () => {
+      const videoTrack = Array.from(participant.trackPublications.values()).find(
+        (pub) => pub.track && pub.source === Track.Source.Camera
+      );
+      const audioTrack = Array.from(participant.trackPublications.values()).find(
+        (pub) => pub.track && pub.source === Track.Source.Microphone
+      );
+
+      if (videoTrack?.track && videoRef.current) {
+        videoTrack.track.attach(videoRef.current);
+        setHasVideo(true);
+      } else {
+        setHasVideo(false);
+      }
+
+      if (audioTrack?.track && audioRef.current && !isLocal) {
+        audioTrack.track.attach(audioRef.current);
+      }
+    };
+
+    const handleQuality = () => setQuality(participant.connectionQuality);
+
+    handleTrack();
+
+    participant.on("trackSubscribed" as any, handleTrack);
+    participant.on("trackUnsubscribed" as any, handleTrack);
+    participant.on("trackMuted" as any, handleTrack);
+    participant.on("trackUnmuted" as any, handleTrack);
+    participant.on("connectionQualityChanged" as any, handleQuality);
+    if (isLocal) {
+      participant.on("localTrackPublished" as any, handleTrack);
+      participant.on("localTrackUnpublished" as any, handleTrack);
+    }
+
+    return () => {
+      participant.off("trackSubscribed" as any, handleTrack);
+      participant.off("trackUnsubscribed" as any, handleTrack);
+      participant.off("trackMuted" as any, handleTrack);
+      participant.off("trackUnmuted" as any, handleTrack);
+      participant.off("connectionQualityChanged" as any, handleQuality);
+      if (isLocal) {
+        participant.off("localTrackPublished" as any, handleTrack);
+        participant.off("localTrackUnpublished" as any, handleTrack);
+      }
+    };
+  }, [participant, isLocal]);
+
   const name = participant.name || participant.identity || "User";
   const size = compact ? "h-10 w-10 text-sm" : "h-14 w-14 text-xl";
 
@@ -89,10 +172,18 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
         </div>
       )}
       <audio ref={audioRef} autoPlay />
-      <div className="absolute bottom-1.5 left-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
-        <span className="text-[10px] font-semibold text-primary-foreground">
-          {isLocal ? "You" : name}
-        </span>
+      {/* Name + quality bar */}
+      <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
+        <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
+          <span className="text-[10px] font-semibold text-primary-foreground">
+            {isLocal ? "You" : name}
+          </span>
+        </div>
+        {!compact && (
+          <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-1">
+            {qualityBars(quality)}
+          </div>
+        )}
       </div>
     </div>
   );
