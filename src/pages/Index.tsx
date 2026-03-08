@@ -25,6 +25,7 @@ const Index = () => {
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
       {activeTab === "discover" && <DiscoverView />}
+      {activeTab === "live" && <LiveView />}
       {activeTab === "likes" && <LikesView />}
       {activeTab === "messages" && <MessagesView />}
       {activeTab === "profile" && <ProfileView />}

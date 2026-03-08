@@ -8,6 +8,7 @@ interface BottomNavProps {
 
 const tabs = [
   { id: "discover", icon: Flame, label: "Discover" },
+  { id: "live", icon: Radio, label: "Live" },
   { id: "likes", icon: Heart, label: "Likes" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
   { id: "profile", icon: User, label: "Profile" },
