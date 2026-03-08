@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, User, Flame } from "lucide-react";
+import { Heart, MessageCircle, User, Flame, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface BottomNavProps {
