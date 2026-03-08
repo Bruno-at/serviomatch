@@ -106,6 +106,7 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
