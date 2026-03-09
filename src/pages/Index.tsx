@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import DiscoverView from "@/components/DiscoverView";
 import LiveView from "@/components/LiveView";
@@ -7,12 +8,30 @@ import LikesView from "@/components/LikesView";
 import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
 import SavedProfilesView from "@/components/SavedProfilesView";
+import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
 import Auth from "./Auth";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("discover");
   const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkOnboarding = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("photos, avatar_url")
+        .eq("user_id", user.id)
+        .single();
+
+      const hasPhotos = data?.photos && (data.photos as string[]).length > 0;
+      const hasAvatar = !!data?.avatar_url;
+      setNeedsOnboarding(!hasPhotos && !hasAvatar);
+    };
+    checkOnboarding();
+  }, [user]);
 
   if (loading) {
     return (
@@ -23,6 +42,18 @@ const Index = () => {
   }
 
   if (!user) return <Auth />;
+
+  if (needsOnboarding === null) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (needsOnboarding) {
+    return <PhotoUploadOnboarding onComplete={() => setNeedsOnboarding(false)} />;
+  }
 
   if (savedView) {
     return (
