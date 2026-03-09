@@ -179,7 +179,9 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
             </span>
           </div>
         )}
-        <QualityBadge quality={quality} compact={compact} />
+        <div className={compact ? "ml-auto" : ""}>
+          <QualityBadge quality={quality} compact={compact} />
+        </div>
       </div>
     </div>
   );
