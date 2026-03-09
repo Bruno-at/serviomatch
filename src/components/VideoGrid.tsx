@@ -205,7 +205,7 @@ const VideoTile = ({ participant, isLocal, compact, latencyMs }: ParticipantTile
           </div>
         )}
         <div className={compact ? "ml-auto" : ""}>
-          <QualityBadge quality={quality} compact={compact} />
+          <QualityBadge quality={quality} compact={compact} latencyMs={isLocal ? latencyMs : undefined} />
         </div>
       </div>
     </div>
