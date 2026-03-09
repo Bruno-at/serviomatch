@@ -7,13 +7,24 @@ import {
   ConnectionQuality,
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff, Users } from "lucide-react";
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  PhoneOff,
+  ScreenShare,
+  ScreenShareOff,
+  Users,
+  RefreshCw,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VideoGridProps {
   token: string;
   url: string;
   onDisconnect: () => void;
+  onDropped?: () => void;
 }
 
 interface ParticipantTile {
@@ -28,10 +39,14 @@ interface ScreenShareInfo {
 
 const qualityLabel = (quality: ConnectionQuality): string => {
   switch (quality) {
-    case ConnectionQuality.Excellent: return "Excellent";
-    case ConnectionQuality.Good: return "Good";
-    case ConnectionQuality.Poor: return "Poor";
-    default: return "Connecting…";
+    case ConnectionQuality.Excellent:
+      return "Excellent";
+    case ConnectionQuality.Good:
+      return "Good";
+    case ConnectionQuality.Poor:
+      return "Poor";
+    default:
+      return "Connecting…";
   }
 };
 
@@ -61,7 +76,9 @@ const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} flex items-center gap-1 cursor-default`}>
+          <div
+            className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} flex items-center gap-1 cursor-default`}
+          >
             <div className={`flex items-end gap-[2px] ${isUnknown ? "animate-pulse" : ""}`}>
               {bars.map((bar, i) => (
                 <div
@@ -72,12 +89,17 @@ const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality
               ))}
             </div>
             {!compact && (
-              <span className={`text-[9px] font-semibold leading-none transition-colors duration-500 ${
-                quality === ConnectionQuality.Excellent ? "text-green-400" :
-                quality === ConnectionQuality.Good ? "text-yellow-400" :
-                quality === ConnectionQuality.Poor ? "text-destructive" :
-                "text-muted-foreground/80"
-              }`}>
+              <span
+                className={`text-[9px] font-semibold leading-none transition-colors duration-500 ${
+                  quality === ConnectionQuality.Excellent
+                    ? "text-green-400"
+                    : quality === ConnectionQuality.Good
+                      ? "text-yellow-400"
+                      : quality === ConnectionQuality.Poor
+                        ? "text-destructive"
+                        : "text-muted-foreground/80"
+                }`}
+              >
                 {label}
               </span>
             )}
@@ -101,10 +123,10 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
   useEffect(() => {
     const handleTrack = () => {
       const videoTrack = Array.from(participant.trackPublications.values()).find(
-        (pub) => pub.track && pub.source === Track.Source.Camera
+        (pub) => pub.track && pub.source === Track.Source.Camera,
       );
       const audioTrack = Array.from(participant.trackPublications.values()).find(
-        (pub) => pub.track && pub.source === Track.Source.Microphone
+        (pub) => pub.track && pub.source === Track.Source.Microphone,
       );
 
       if (videoTrack?.track && videoRef.current) {
@@ -158,7 +180,9 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
         <video ref={videoRef} autoPlay playsInline muted={isLocal} className="h-full w-full object-cover" />
       ) : (
         <div className="h-full w-full flex items-center justify-center bg-muted">
-          <div className={`flex ${size} items-center justify-center rounded-full bg-primary/20 font-bold text-primary font-display`}>
+          <div
+            className={`flex ${size} items-center justify-center rounded-full bg-primary/20 font-bold text-primary font-display`}
+          >
             {name.charAt(0).toUpperCase()}
           </div>
         </div>
@@ -174,9 +198,7 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
       <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
         {!compact && (
           <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
-            <span className="text-[10px] font-semibold text-primary-foreground">
-              {isLocal ? "You" : name}
-            </span>
+            <span className="text-[10px] font-semibold text-primary-foreground">{isLocal ? "You" : name}</span>
           </div>
         )}
         <div className={compact ? "ml-auto" : ""}>
@@ -193,7 +215,7 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   useEffect(() => {
     const attach = () => {
       const screenTrack = Array.from(participant.trackPublications.values()).find(
-        (pub) => pub.track && pub.source === Track.Source.ScreenShare
+        (pub) => pub.track && pub.source === Track.Source.ScreenShare,
       );
       if (screenTrack?.track && videoRef.current) {
         screenTrack.track.attach(videoRef.current);
@@ -233,15 +255,20 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
+  const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
+    intentionalDisconnectRef.current = false;
+    setIsReconnecting(false);
+
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
@@ -259,12 +286,26 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
 
     room.on(RoomEvent.Connected, () => {
       setConnected(true);
+      setIsReconnecting(false);
       updateParticipants();
     });
+
+    room.on(RoomEvent.Reconnecting, () => {
+      setIsReconnecting(true);
+    });
+
+    room.on(RoomEvent.Reconnected, () => {
+      setIsReconnecting(false);
+    });
+
     room.on(RoomEvent.Disconnected, () => {
       setConnected(false);
+      setIsReconnecting(false);
+      if (intentionalDisconnectRef.current) return;
+      onDropped?.();
       onDisconnect();
     });
+
     room.on(RoomEvent.ParticipantConnected, updateParticipants);
     room.on(RoomEvent.ParticipantDisconnected, updateParticipants);
     room.on(RoomEvent.TrackSubscribed, updateParticipants);
@@ -281,12 +322,16 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
       })
       .catch((err) => {
         console.error("LiveKit connect error:", err);
+        if (!intentionalDisconnectRef.current) onDropped?.();
         onDisconnect();
       });
 
     return () => {
+      intentionalDisconnectRef.current = true;
       room.disconnect();
     };
+    // Keep the same dependency behavior as before to avoid unnecessary reconnect loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, url]);
 
   const toggleCamera = async () => {
@@ -315,6 +360,7 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
   };
 
   const handleDisconnect = () => {
+    intentionalDisconnectRef.current = true;
     roomRef.current?.disconnect();
     onDisconnect();
   };
@@ -322,7 +368,7 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
   // Detect active screen shares
   const screenSharer = participants.find((tile) => {
     return Array.from(tile.participant.trackPublications.values()).some(
-      (pub) => pub.track && pub.source === Track.Source.ScreenShare
+      (pub) => pub.track && pub.source === Track.Source.ScreenShare,
     );
   });
 
@@ -345,12 +391,29 @@ const VideoGrid = ({ token, url, onDisconnect }: VideoGridProps) => {
         <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
       </div>
 
+      {/* Reconnecting overlay */}
+      <AnimatePresence>
+        {isReconnecting && connected && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2 rounded-full bg-card border border-border px-3 py-2 shadow-sm">
+              <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+              <span className="text-xs font-semibold text-foreground">Reconnecting…</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {isPiP ? (
         /* PiP layout: screen share main + camera thumbnails */
         <div className="flex-1 flex flex-col overflow-hidden p-2 gap-2">
           {/* Main screen share */}
           <div className="flex-1 min-h-0">
-            <ScreenShareTile participant={screenSharer.participant} isLocal={screenSharer.isLocal} />
+            <ScreenShareTile participant={screenSharer!.participant} isLocal={screenSharer!.isLocal} />
           </div>
           {/* Camera thumbnails */}
           <div className="flex gap-2 overflow-x-auto pb-1">
