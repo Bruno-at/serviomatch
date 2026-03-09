@@ -63,6 +63,23 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     setWasDisconnected(true);
   };
 
+  const handleParticipantLeft = (participantName: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        message: {
+          id: `sys-left-${Date.now()}`,
+          room_id: room.id,
+          sender_id: "",
+          content: `${participantName} left the call`,
+          message_type: "system",
+          created_at: new Date().toISOString(),
+        } as Tables<"live_messages">,
+        senderName: "System",
+      },
+    ]);
+  };
+
   // Fetch LiveKit token
   const joinVideo = async () => {
     if (!session?.access_token) return;
