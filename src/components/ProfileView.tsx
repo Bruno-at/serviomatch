@@ -5,11 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
+import SettingsView from "./SettingsView";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -27,6 +29,10 @@ const ProfileView = () => {
         <p className="text-sm text-muted-foreground">Loading profile...</p>
       </div>
     );
+  }
+
+  if (showSettings) {
+    return <SettingsView onBack={() => setShowSettings(false)} />;
   }
 
   if (editing) {
@@ -47,7 +53,7 @@ const ProfileView = () => {
           <button onClick={signOut} className="rounded-full bg-muted p-2">
             <LogOut className="h-5 w-5 text-muted-foreground" />
           </button>
-          <button className="rounded-full bg-muted p-2">
+          <button onClick={() => setShowSettings(true)} className="rounded-full bg-muted p-2">
             <Settings className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
