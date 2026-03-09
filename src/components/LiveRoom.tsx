@@ -41,6 +41,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   const [videoActive, setVideoActive] = useState(false);
   const [joiningVideo, setJoiningVideo] = useState(false);
   const [wasDisconnected, setWasDisconnected] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const reactionId = useRef(0);
   const isHost = user?.id === room.host_id;
