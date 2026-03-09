@@ -8,6 +8,7 @@ import {
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VideoGridProps {
   token: string;
