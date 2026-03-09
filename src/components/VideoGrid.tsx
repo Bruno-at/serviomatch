@@ -25,6 +25,7 @@ interface VideoGridProps {
   url: string;
   onDisconnect: () => void;
   onDropped?: () => void;
+  onParticipantLeft?: (participantName: string) => void;
 }
 
 interface ParticipantTile {
@@ -258,7 +259,7 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
@@ -311,7 +312,11 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
     });
 
     room.on(RoomEvent.ParticipantConnected, updateParticipants);
-    room.on(RoomEvent.ParticipantDisconnected, updateParticipants);
+    room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      const name = participant.name || participant.identity || "User";
+      onParticipantLeft?.(name);
+      updateParticipants();
+    });
     room.on(RoomEvent.TrackSubscribed, updateParticipants);
     room.on(RoomEvent.TrackUnsubscribed, updateParticipants);
     room.on(RoomEvent.TrackMuted, updateParticipants);
