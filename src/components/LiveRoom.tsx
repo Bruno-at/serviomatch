@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Gift, X, Eye, Video, WifiOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Send, Gift, X, Eye, Video, WifiOff, RefreshCw, Minimize2, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
