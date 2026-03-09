@@ -6,11 +6,13 @@ import LiveView from "@/components/LiveView";
 import LikesView from "@/components/LikesView";
 import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
+import SavedProfilesView from "@/components/SavedProfilesView";
 import Auth from "./Auth";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("discover");
+  const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
 
   if (loading) {
     return (
@@ -22,9 +24,22 @@ const Index = () => {
 
   if (!user) return <Auth />;
 
+  if (savedView) {
+    return (
+      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
+        <SavedProfilesView type={savedView} onBack={() => setSavedView(null)} />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
-      {activeTab === "discover" && <DiscoverView />}
+      {activeTab === "discover" && (
+        <DiscoverView
+          onShowFavorites={() => setSavedView("favorites")}
+          onShowBookmarks={() => setSavedView("bookmarks")}
+        />
+      )}
       {activeTab === "live" && <LiveView />}
       {activeTab === "likes" && <LikesView />}
       {activeTab === "messages" && <MessagesView />}
