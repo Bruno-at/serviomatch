@@ -31,6 +31,10 @@ const ProfileView = () => {
     );
   }
 
+  if (showSettings) {
+    return <SettingsView onBack={() => setShowSettings(false)} />;
+  }
+
   if (editing) {
     return (
       <EditProfileView
