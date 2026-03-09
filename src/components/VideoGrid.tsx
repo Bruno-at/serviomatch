@@ -50,7 +50,7 @@ const qualityLabel = (quality: ConnectionQuality): string => {
   }
 };
 
-const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality; compact?: boolean }) => {
+const QualityBadge = ({ quality, compact = false, latencyMs }: { quality: ConnectionQuality; compact?: boolean; latencyMs?: number | null }) => {
   const isUnknown = quality === ConnectionQuality.Unknown;
   const bars = [
     { filled: !isUnknown },
