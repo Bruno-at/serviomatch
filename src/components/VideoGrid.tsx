@@ -179,9 +179,7 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
             </span>
           </div>
         )}
-        <div className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} ${compact ? "ml-auto" : ""}`}>
-          {qualityBars(quality, compact)}
-        </div>
+        <QualityBadge quality={quality} compact={compact} />
       </div>
     </div>
   );
