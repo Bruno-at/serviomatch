@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Gift, X, Eye, Video } from "lucide-react";
+import { ArrowLeft, Send, Gift, X, Eye, Video, WifiOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -40,6 +40,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoActive, setVideoActive] = useState(false);
   const [joiningVideo, setJoiningVideo] = useState(false);
+  const [wasDisconnected, setWasDisconnected] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const reactionId = useRef(0);
   const isHost = user?.id === room.host_id;
@@ -57,9 +58,14 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     return name;
   };
 
+  const handleVideoDropped = () => {
+    setWasDisconnected(true);
+  };
+
   // Fetch LiveKit token
   const joinVideo = async () => {
     if (!session?.access_token) return;
+    setWasDisconnected(false);
     setJoiningVideo(true);
     try {
       const { data, error } = await supabase.functions.invoke("livekit-token", {
@@ -71,6 +77,8 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       setVideoActive(true);
     } catch (e: any) {
       toast.error("Failed to join video: " + (e.message || "Unknown error"));
+      // If the user was explicitly trying to reconnect, keep the banner around.
+      setWasDisconnected(true);
     } finally {
       setJoiningVideo(false);
     }
@@ -78,9 +86,13 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
   useEffect(() => {
     if (!isHost) {
-      supabase.from("live_rooms").update({ viewer_count: viewerCount + 1 }).eq("id", room.id).then(() => {
-        setViewerCount((v) => v + 1);
-      });
+      supabase
+        .from("live_rooms")
+        .update({ viewer_count: viewerCount + 1 })
+        .eq("id", room.id)
+        .then(() => {
+          setViewerCount((v) => v + 1);
+        });
       supabase.from("live_messages").insert({
         room_id: room.id,
         sender_id: user!.id,
@@ -129,7 +141,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
               setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
             }, 2000);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -194,6 +206,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
             token={videoToken}
             url={videoUrl}
             onDisconnect={() => setVideoActive(false)}
+            onDropped={handleVideoDropped}
           />
         </div>
       ) : (
@@ -217,7 +230,11 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
           <div className="flex items-center gap-3 mt-4">
             {hostAvatar ? (
-              <img src={hostAvatar} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30" />
+              <img
+                src={hostAvatar}
+                alt=""
+                className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30"
+              />
             ) : (
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20 text-lg font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
                 {hostName.charAt(0).toUpperCase()}
@@ -227,16 +244,30 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
               <p className="font-semibold text-primary-foreground text-sm">{hostName}</p>
               <p className="text-primary-foreground/70 text-xs">{room.title}</p>
             </div>
-            {!isHost && !videoActive && (
+            {!videoActive && (!isHost || wasDisconnected) && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={joinVideo}
                 disabled={joiningVideo}
                 className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 backdrop-blur-sm px-3 py-1.5"
               >
-                <Video className="h-4 w-4 text-primary-foreground" />
+                {wasDisconnected ? (
+                  joiningVideo ? (
+                    <RefreshCw className="h-4 w-4 text-primary-foreground animate-spin" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-primary-foreground" />
+                  )
+                ) : (
+                  <Video className="h-4 w-4 text-primary-foreground" />
+                )}
                 <span className="text-xs font-semibold text-primary-foreground">
-                  {joiningVideo ? "Joining..." : "Join Video"}
+                  {joiningVideo
+                    ? wasDisconnected
+                      ? "Rejoining..."
+                      : "Joining..."
+                    : wasDisconnected
+                      ? "Reconnect"
+                      : "Join Video"}
                 </span>
               </motion.button>
             )}
@@ -245,7 +276,9 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       )}
 
       {/* Chat area */}
-      <div className={`flex-1 ${!videoActive ? "-mt-8 rounded-t-3xl" : ""} bg-background overflow-y-auto px-4 pt-4 pb-2 relative`}>
+      <div
+        className={`flex-1 ${!videoActive ? "-mt-8 rounded-t-3xl" : ""} bg-background overflow-y-auto px-4 pt-4 pb-2 relative`}
+      >
         {/* Floating reactions */}
         <div className="absolute right-4 bottom-20 pointer-events-none">
           <AnimatePresence>
@@ -265,9 +298,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         </div>
 
         {messages.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            Welcome to the live! Say something 👋
-          </p>
+          <p className="text-center text-sm text-muted-foreground mt-8">Welcome to the live! Say something 👋</p>
         ) : (
           <div className="space-y-1.5">
             {messages.map((item) => {
