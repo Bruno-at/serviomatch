@@ -330,7 +330,24 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
         onDisconnect();
       });
 
+    // Poll RTT via WebRTC stats every 2 s
+    const latencyInterval = setInterval(async () => {
+      const pc = (room.engine as any)?.pcManager?.publisher?.pc as RTCPeerConnection | undefined;
+      if (!pc) return;
+      try {
+        const stats = await pc.getStats();
+        stats.forEach((report) => {
+          if (report.type === "candidate-pair" && report.state === "succeeded" && report.currentRoundTripTime != null) {
+            setLatencyMs(Math.round(report.currentRoundTripTime * 1000));
+          }
+        });
+      } catch {
+        // stats not available yet
+      }
+    }, 2000);
+
     return () => {
+      clearInterval(latencyInterval);
       intentionalDisconnectRef.current = true;
       room.disconnect();
     };
