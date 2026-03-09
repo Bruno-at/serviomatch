@@ -53,7 +53,7 @@ const ProfileView = () => {
           <button onClick={signOut} className="rounded-full bg-muted p-2">
             <LogOut className="h-5 w-5 text-muted-foreground" />
           </button>
-          <button className="rounded-full bg-muted p-2">
+          <button onClick={() => setShowSettings(true)} className="rounded-full bg-muted p-2">
             <Settings className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
