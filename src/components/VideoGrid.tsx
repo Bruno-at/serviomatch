@@ -8,6 +8,7 @@ import {
 } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Video, VideoOff, Mic, MicOff, PhoneOff, ScreenShare, ScreenShareOff, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VideoGridProps {
   token: string;
@@ -25,7 +26,16 @@ interface ScreenShareInfo {
   isLocal: boolean;
 }
 
-const qualityBars = (quality: ConnectionQuality, compact = false) => {
+const qualityLabel = (quality: ConnectionQuality): string => {
+  switch (quality) {
+    case ConnectionQuality.Excellent: return "Excellent";
+    case ConnectionQuality.Good: return "Good";
+    case ConnectionQuality.Poor: return "Poor";
+    default: return "Connecting…";
+  }
+};
+
+const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality; compact?: boolean }) => {
   const isUnknown = quality === ConnectionQuality.Unknown;
   const bars = [
     { filled: !isUnknown },
@@ -45,20 +55,39 @@ const qualityBars = (quality: ConnectionQuality, compact = false) => {
 
   const scale = compact ? 0.75 : 1;
   const baseH = [6, 9, 12];
+  const label = qualityLabel(quality);
 
   return (
-    <div
-      className={`flex items-end gap-[2px] ${isUnknown ? "animate-pulse" : ""}`}
-      title={isUnknown ? "Connecting…" : `Signal: ${quality}`}
-    >
-      {bars.map((bar, i) => (
-        <div
-          key={i}
-          style={{ height: `${Math.round(baseH[i] * scale)}px`, width: compact ? "2px" : "3px" }}
-          className={`rounded-sm transition-colors duration-500 ${bar.filled ? color : "bg-foreground/30"}`}
-        />
-      ))}
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} flex items-center gap-1 cursor-default`}>
+            <div className={`flex items-end gap-[2px] ${isUnknown ? "animate-pulse" : ""}`}>
+              {bars.map((bar, i) => (
+                <div
+                  key={i}
+                  style={{ height: `${Math.round(baseH[i] * scale)}px`, width: compact ? "2px" : "3px" }}
+                  className={`rounded-sm transition-colors duration-500 ${bar.filled ? color : "bg-foreground/30"}`}
+                />
+              ))}
+            </div>
+            {!compact && (
+              <span className={`text-[9px] font-semibold leading-none transition-colors duration-500 ${
+                quality === ConnectionQuality.Excellent ? "text-green-400" :
+                quality === ConnectionQuality.Good ? "text-yellow-400" :
+                quality === ConnectionQuality.Poor ? "text-destructive" :
+                "text-muted-foreground/80"
+              }`}>
+                {label}
+              </span>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          Signal: <span className="font-semibold">{label}</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
@@ -150,8 +179,8 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
             </span>
           </div>
         )}
-        <div className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} ${compact ? "ml-auto" : ""}`}>
-          {qualityBars(quality, compact)}
+        <div className={compact ? "ml-auto" : ""}>
+          <QualityBadge quality={quality} compact={compact} />
         </div>
       </div>
     </div>
