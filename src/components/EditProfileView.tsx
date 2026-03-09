@@ -25,16 +25,19 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
   const [age, setAge] = useState(profile.age?.toString() || "");
   const [location, setLocation] = useState(profile.location || "");
   const [interests, setInterests] = useState<string[]>(profile.interests || []);
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState<(string | null)[]>(() => {
+    const existing = (profile as any).photos || [];
+    const padded = [...existing];
+    while (padded.length < 4) padded.push(null);
+    return padded.slice(0, 4);
+  });
+  const [uploading, setUploading] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [customInterest, setCustomInterest] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
+  const handlePhotoUpload = async (index: number, file: File) => {
+    if (!user) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
@@ -44,9 +47,9 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
       return;
     }
 
-    setUploading(true);
+    setUploading(index);
     const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
+    const path = `${user.id}/photo-${index}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("avatars")
@@ -54,14 +57,27 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
 
     if (uploadError) {
       toast.error("Upload failed");
-      setUploading(false);
+      setUploading(null);
       return;
     }
 
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    setAvatarUrl(`${urlData.publicUrl}?t=${Date.now()}`);
-    setUploading(false);
+    const url = `${urlData.publicUrl}?t=${Date.now()}`;
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = url;
+      return next;
+    });
+    setUploading(null);
     toast.success("Photo uploaded!");
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
   };
 
   const toggleInterest = (interest: string) => {
@@ -92,13 +108,16 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
       return;
     }
 
+    const validPhotos = photos.filter(Boolean) as string[];
+
     const updates = {
       display_name: displayName.trim(),
       bio: bio.trim(),
       age: ageNum,
       location: location.trim(),
       interests,
-      avatar_url: avatarUrl || null,
+      avatar_url: validPhotos[0] || null,
+      photos: validPhotos,
     };
 
     const { data, error } = await supabase
@@ -127,34 +146,56 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
         <h1 className="text-xl font-bold font-display text-foreground">Edit Profile</h1>
       </div>
 
-      {/* Avatar */}
-      <div className="flex justify-center mb-6">
-        <div className="relative">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="h-28 w-28 rounded-full object-cover ring-4 ring-primary/20" />
-          ) : (
-            <div className="flex h-28 w-28 items-center justify-center rounded-full gradient-love ring-4 ring-primary/20 text-3xl font-bold text-primary-foreground">
-              {displayName.charAt(0).toUpperCase() || "?"}
+      {/* Photo grid - 2x2 */}
+      <div className="mb-6">
+        <label className="text-sm font-medium text-foreground mb-2 block">Photos (up to 4)</label>
+        <div className="grid grid-cols-4 gap-2">
+          {photos.map((photo, index) => (
+            <div
+              key={index}
+              className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-border bg-muted"
+            >
+              {photo ? (
+                <>
+                  <img src={photo} alt={`Photo ${index + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => handleRemovePhoto(index)}
+                    className="absolute top-1 right-1 rounded-full bg-foreground/60 p-1 backdrop-blur-sm"
+                  >
+                    <X className="h-2.5 w-2.5 text-primary-foreground" />
+                  </button>
+                  {index === 0 && (
+                    <span className="absolute bottom-1 left-1 rounded-full gradient-love px-1.5 py-0.5 text-[8px] font-semibold text-primary-foreground">
+                      Main
+                    </span>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => photoInputRefs.current[index]?.click()}
+                  disabled={uploading !== null}
+                  className="flex h-full w-full flex-col items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {uploading === index ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </button>
+              )}
+              <input
+                ref={(el) => { photoInputRefs.current[index] = el; }}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoUpload(index, file);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
             </div>
-          )}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="absolute bottom-0 right-0 rounded-full gradient-love p-2.5 shadow-card disabled:opacity-50"
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
-            ) : (
-              <Camera className="h-4 w-4 text-primary-foreground" />
-            )}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarUpload}
-            className="hidden"
-          />
+          ))}
         </div>
       </div>
 
@@ -213,7 +254,6 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
             Interests ({interests.length}/12)
           </label>
 
-          {/* Selected */}
           {interests.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {interests.map((interest) => (
@@ -229,7 +269,6 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
             </div>
           )}
 
-          {/* Suggestions */}
           <div className="flex flex-wrap gap-2 mb-3">
             {INTEREST_SUGGESTIONS.filter((s) => !interests.includes(s)).map((s) => (
               <button
@@ -243,7 +282,6 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
             ))}
           </div>
 
-          {/* Custom interest */}
           <div className="flex gap-2">
             <input
               value={customInterest}

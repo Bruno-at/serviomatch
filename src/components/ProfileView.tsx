@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut } from "lucide-react";
+import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -12,6 +12,7 @@ const ProfileView = () => {
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [editing, setEditing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +46,9 @@ const ProfileView = () => {
     );
   }
 
+  const photos = ((profile as any).photos || []) as string[];
+  const allImages = photos.length > 0 ? photos : profile.avatar_url ? [profile.avatar_url] : [];
+
   return (
     <div className="flex h-full flex-col items-center px-6 pt-4">
       <div className="flex w-full justify-between items-center mb-6">
@@ -59,15 +63,49 @@ const ProfileView = () => {
         </div>
       </div>
 
-      <div className="relative mb-4">
-        {profile.avatar_url ? (
-          <img src={profile.avatar_url} alt="Your profile" className="h-28 w-28 rounded-full object-cover ring-4 ring-primary/20" />
+      {/* Photo carousel */}
+      <div className="relative mb-4 w-full max-w-[200px]">
+        {allImages.length > 0 ? (
+          <div className="relative aspect-[3/4] rounded-2xl overflow-hidden ring-4 ring-primary/20">
+            <img
+              src={allImages[photoIndex] || allImages[0]}
+              alt="Your profile"
+              className="h-full w-full object-cover"
+            />
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={() => setPhotoIndex((i) => (i - 1 + allImages.length) % allImages.length)}
+                  className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-foreground/40 p-1 backdrop-blur-sm"
+                >
+                  <ChevronLeft className="h-4 w-4 text-primary-foreground" />
+                </button>
+                <button
+                  onClick={() => setPhotoIndex((i) => (i + 1) % allImages.length)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-foreground/40 p-1 backdrop-blur-sm"
+                >
+                  <ChevronRight className="h-4 w-4 text-primary-foreground" />
+                </button>
+                {/* Dots */}
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                  {allImages.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                        i === photoIndex ? "bg-primary-foreground" : "bg-primary-foreground/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         ) : (
-          <div className="flex h-28 w-28 items-center justify-center rounded-full gradient-love ring-4 ring-primary/20 text-3xl font-bold text-primary-foreground">
+          <div className="flex aspect-[3/4] items-center justify-center rounded-2xl gradient-love ring-4 ring-primary/20 text-4xl font-bold text-primary-foreground">
             {profile.display_name.charAt(0).toUpperCase()}
           </div>
         )}
-        <button onClick={() => setEditing(true)} className="absolute bottom-0 right-0 rounded-full gradient-love p-2 shadow-card">
+        <button onClick={() => setEditing(true)} className="absolute bottom-2 right-2 rounded-full gradient-love p-2 shadow-card">
           <Camera className="h-4 w-4 text-primary-foreground" />
         </button>
       </div>
