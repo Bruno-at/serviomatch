@@ -50,7 +50,7 @@ const qualityLabel = (quality: ConnectionQuality): string => {
   }
 };
 
-const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality; compact?: boolean }) => {
+const QualityBadge = ({ quality, compact = false, latencyMs }: { quality: ConnectionQuality; compact?: boolean; latencyMs?: number | null }) => {
   const isUnknown = quality === ConnectionQuality.Unknown;
   const bars = [
     { filled: !isUnknown },
@@ -106,14 +106,17 @@ const QualityBadge = ({ quality, compact = false }: { quality: ConnectionQuality
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          Signal: <span className="font-semibold">{label}</span>
+          <div>Signal: <span className="font-semibold">{label}</span></div>
+          {latencyMs != null && (
+            <div>Ping: <span className="font-semibold">{latencyMs}ms</span></div>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 };
 
-const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compact?: boolean }) => {
+const VideoTile = ({ participant, isLocal, compact, latencyMs }: ParticipantTile & { compact?: boolean; latencyMs?: number | null }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -202,7 +205,7 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
           </div>
         )}
         <div className={compact ? "ml-auto" : ""}>
-          <QualityBadge quality={quality} compact={compact} />
+          <QualityBadge quality={quality} compact={compact} latencyMs={isLocal ? latencyMs : undefined} />
         </div>
       </div>
     </div>
@@ -264,6 +267,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
   const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
 
   useEffect(() => {
     intentionalDisconnectRef.current = false;
@@ -326,7 +330,24 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
         onDisconnect();
       });
 
+    // Poll RTT via WebRTC stats every 2 s
+    const latencyInterval = setInterval(async () => {
+      const pc = (room.engine as any)?.pcManager?.publisher?.pc as RTCPeerConnection | undefined;
+      if (!pc) return;
+      try {
+        const stats = await pc.getStats();
+        stats.forEach((report) => {
+          if (report.type === "candidate-pair" && report.state === "succeeded" && report.currentRoundTripTime != null) {
+            setLatencyMs(Math.round(report.currentRoundTripTime * 1000));
+          }
+        });
+      } catch {
+        // stats not available yet
+      }
+    }, 2000);
+
     return () => {
+      clearInterval(latencyInterval);
       intentionalDisconnectRef.current = true;
       room.disconnect();
     };
@@ -424,7 +445,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-20 shrink-0"
               >
-                <VideoTile participant={tile.participant} isLocal={tile.isLocal} compact />
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} compact latencyMs={latencyMs} />
               </motion.div>
             ))}
           </div>
@@ -440,7 +461,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
               >
-                <VideoTile participant={tile.participant} isLocal={tile.isLocal} />
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} latencyMs={latencyMs} />
               </motion.div>
             ))}
           </AnimatePresence>
