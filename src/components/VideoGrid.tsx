@@ -106,7 +106,10 @@ const QualityBadge = ({ quality, compact = false, latencyMs }: { quality: Connec
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          Signal: <span className="font-semibold">{label}</span>
+          <div>Signal: <span className="font-semibold">{label}</span></div>
+          {latencyMs != null && (
+            <div>Ping: <span className="font-semibold">{latencyMs}ms</span></div>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
