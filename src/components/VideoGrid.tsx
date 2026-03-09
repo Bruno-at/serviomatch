@@ -116,7 +116,7 @@ const QualityBadge = ({ quality, compact = false, latencyMs }: { quality: Connec
   );
 };
 
-const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compact?: boolean }) => {
+const VideoTile = ({ participant, isLocal, compact, latencyMs }: ParticipantTile & { compact?: boolean; latencyMs?: number | null }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
