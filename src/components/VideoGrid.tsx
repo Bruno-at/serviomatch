@@ -461,7 +461,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
               >
-                <VideoTile participant={tile.participant} isLocal={tile.isLocal} />
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} latencyMs={latencyMs} />
               </motion.div>
             ))}
           </AnimatePresence>
