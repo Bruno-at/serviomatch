@@ -199,216 +199,290 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   };
 
   return (
-    <div className="flex h-full flex-col relative overflow-hidden">
-      {/* Video area */}
-      {videoActive && videoToken && videoUrl ? (
-        <div className="h-[45%] min-h-[200px] bg-foreground/5">
-          <VideoGrid
-            token={videoToken}
-            url={videoUrl}
-            onDisconnect={() => setVideoActive(false)}
-            onDropped={handleVideoDropped}
-          />
-        </div>
-      ) : (
-        /* Header with gradient background */
-        <div className="relative gradient-love px-4 pt-4 pb-16">
-          <div className="flex items-center justify-between">
-            <button onClick={onLeave} className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5">
-              <ArrowLeft className="h-5 w-5 text-primary-foreground" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-full bg-foreground/20 backdrop-blur-sm px-2.5 py-1">
-                <Eye className="h-3.5 w-3.5 text-primary-foreground" />
-                <span className="text-xs font-semibold text-primary-foreground">{viewerCount}</span>
-              </div>
-              <div className="flex items-center gap-1 rounded-full bg-destructive px-2.5 py-1">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
-                <span className="text-[10px] font-bold text-primary-foreground">LIVE</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 mt-4">
-            {hostAvatar ? (
-              <img
-                src={hostAvatar}
-                alt=""
-                className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30"
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20 text-lg font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
-                {hostName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex-1">
-              <p className="font-semibold text-primary-foreground text-sm">{hostName}</p>
-              <p className="text-primary-foreground/70 text-xs">{room.title}</p>
-            </div>
-            {!videoActive && (!isHost || wasDisconnected) && (
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={joinVideo}
-                disabled={joiningVideo}
-                className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 backdrop-blur-sm px-3 py-1.5"
-              >
-                {wasDisconnected ? (
-                  joiningVideo ? (
-                    <RefreshCw className="h-4 w-4 text-primary-foreground animate-spin" />
-                  ) : (
-                    <WifiOff className="h-4 w-4 text-primary-foreground" />
-                  )
-                ) : (
-                  <Video className="h-4 w-4 text-primary-foreground" />
-                )}
-                <span className="text-xs font-semibold text-primary-foreground">
-                  {joiningVideo
-                    ? wasDisconnected
-                      ? "Rejoining..."
-                      : "Joining..."
-                    : wasDisconnected
-                      ? "Reconnect"
-                      : "Join Video"}
-                </span>
-              </motion.button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Chat area */}
-      <div
-        className={`flex-1 ${!videoActive ? "-mt-8 rounded-t-3xl" : ""} bg-background overflow-y-auto px-4 pt-4 pb-2 relative`}
-      >
-        {/* Floating reactions */}
-        <div className="absolute right-4 bottom-20 pointer-events-none">
-          <AnimatePresence>
-            {floatingReactions.map((r) => (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 1, y: 0, scale: 1 }}
-                animate={{ opacity: 0, y: -120, scale: 1.5 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 2 }}
-                className="text-2xl absolute bottom-0 right-0"
-              >
-                {r.emoji}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {messages.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground mt-8">Welcome to the live! Say something 👋</p>
-        ) : (
-          <div className="space-y-1.5">
-            {messages.map((item) => {
-              const { message: msg, senderName } = item;
-              if (msg.message_type === "join") {
-                return (
-                  <p key={msg.id} className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-primary">{senderName}</span> {msg.content}
-                  </p>
-                );
-              }
-              if (msg.message_type === "gift") {
-                return (
-                  <motion.p
-                    key={msg.id}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-xs"
-                  >
-                    <span className="font-semibold text-primary">{senderName}</span>{" "}
-                    <span className="text-muted-foreground">sent</span>{" "}
-                    <span className="text-lg">{msg.content}</span>
-                  </motion.p>
-                );
-              }
-              return (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm"
-                >
-                  <span className="font-semibold text-primary text-xs">{senderName}</span>{" "}
-                  <span className="text-foreground text-xs">{msg.content}</span>
-                </motion.div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Gift picker */}
+    <>
+      {/* Minimized bar */}
       <AnimatePresence>
-        {showGifts && (
+        {isMinimized && (
           <motion.div
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             exit={{ y: 100 }}
-            className="bg-card border-t border-border px-4 py-3"
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed bottom-20 left-0 right-0 mx-auto max-w-md z-50"
           >
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-semibold text-foreground">Send a reaction</span>
-              <button onClick={() => setShowGifts(false)}>
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-            <div className="flex justify-around">
-              {giftReactions.map((g) => (
-                <motion.button
-                  key={g.label}
-                  whileTap={{ scale: 0.8 }}
-                  onClick={() => handleGift(g.emoji)}
-                  className="flex flex-col items-center gap-1 rounded-xl p-2 hover:bg-muted"
-                >
-                  <span className="text-2xl">{g.emoji}</span>
-                  <span className="text-[10px] text-muted-foreground">{g.label}</span>
-                </motion.button>
-              ))}
+            <div className="mx-4 rounded-t-2xl gradient-love shadow-2xl overflow-hidden">
+              <div className="flex items-center gap-3 p-3">
+                <button onClick={onLeave} className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5">
+                  <ArrowLeft className="h-4 w-4 text-primary-foreground" />
+                </button>
+                {hostAvatar ? (
+                  <img src={hostAvatar} alt="" className="h-10 w-10 rounded-full object-cover ring-2 ring-primary-foreground/30" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20 text-sm font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
+                    {hostName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-primary-foreground text-sm truncate">{hostName}</p>
+                  <p className="text-primary-foreground/70 text-xs truncate">{room.title}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 rounded-full bg-foreground/20 backdrop-blur-sm px-2 py-1">
+                    <Eye className="h-3 w-3 text-primary-foreground" />
+                    <span className="text-xs font-semibold text-primary-foreground">{viewerCount}</span>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setIsMinimized(false)}
+                    className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5"
+                  >
+                    <Maximize2 className="h-4 w-4 text-primary-foreground" />
+                  </motion.button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Input bar */}
-      <div className="border-t border-border p-3 flex gap-2 items-center">
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowGifts(!showGifts)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted"
+      {/* Full live room */}
+      <motion.div
+        initial={false}
+        animate={{ y: isMinimized ? "100%" : 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="flex h-full flex-col relative overflow-hidden"
+      >
+        {/* Video area */}
+        {videoActive && videoToken && videoUrl ? (
+          <div className="h-[45%] min-h-[200px] bg-foreground/5">
+            <VideoGrid
+              token={videoToken}
+              url={videoUrl}
+              onDisconnect={() => setVideoActive(false)}
+              onDropped={handleVideoDropped}
+              onParticipantLeft={handleParticipantLeft}
+            />
+          </div>
+        ) : (
+          /* Header with gradient background */
+          <div className="relative gradient-love px-4 pt-4 pb-16">
+            <div className="flex items-center justify-between">
+              <button onClick={onLeave} className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5">
+                <ArrowLeft className="h-5 w-5 text-primary-foreground" />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 rounded-full bg-foreground/20 backdrop-blur-sm px-2.5 py-1">
+                  <Eye className="h-3.5 w-3.5 text-primary-foreground" />
+                  <span className="text-xs font-semibold text-primary-foreground">{viewerCount}</span>
+                </div>
+                <div className="flex items-center gap-1 rounded-full bg-destructive px-2.5 py-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
+                  <span className="text-[10px] font-bold text-primary-foreground">LIVE</span>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsMinimized(true)}
+                  className="rounded-full bg-foreground/20 backdrop-blur-sm p-1.5"
+                >
+                  <Minimize2 className="h-4 w-4 text-primary-foreground" />
+                </motion.button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-4">
+              {hostAvatar ? (
+                <img
+                  src={hostAvatar}
+                  alt=""
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-primary-foreground/30"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/20 text-lg font-bold text-primary-foreground ring-2 ring-primary-foreground/30">
+                  {hostName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="font-semibold text-primary-foreground text-sm">{hostName}</p>
+                <p className="text-primary-foreground/70 text-xs">{room.title}</p>
+              </div>
+              {!videoActive && (!isHost || wasDisconnected) && (
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={joinVideo}
+                  disabled={joiningVideo}
+                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 backdrop-blur-sm px-3 py-1.5"
+                >
+                  {wasDisconnected ? (
+                    joiningVideo ? (
+                      <RefreshCw className="h-4 w-4 text-primary-foreground animate-spin" />
+                    ) : (
+                      <WifiOff className="h-4 w-4 text-primary-foreground" />
+                    )
+                  ) : (
+                    <Video className="h-4 w-4 text-primary-foreground" />
+                  )}
+                  <span className="text-xs font-semibold text-primary-foreground">
+                    {joiningVideo
+                      ? wasDisconnected
+                        ? "Rejoining..."
+                        : "Joining..."
+                      : wasDisconnected
+                        ? "Reconnect"
+                        : "Join Video"}
+                  </span>
+                </motion.button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Chat area */}
+        <div
+          className={`flex-1 ${!videoActive ? "-mt-8 rounded-t-3xl" : ""} bg-background overflow-y-auto px-4 pt-4 pb-2 relative`}
         >
-          <Gift className="h-4 w-4 text-primary" />
-        </motion.button>
-        <input
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Say something..."
-          className="flex-1 rounded-xl bg-muted py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30"
-        />
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={handleSend}
-          disabled={!newMessage.trim() || sending}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-love shadow-card disabled:opacity-50"
-        >
-          <Send className="h-4 w-4 text-primary-foreground" />
-        </motion.button>
-        {isHost && (
+          {/* Floating reactions */}
+          <div className="absolute right-4 bottom-20 pointer-events-none">
+            <AnimatePresence>
+              {floatingReactions.map((r) => (
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 1, y: 0, scale: 1 }}
+                  animate={{ opacity: 0, y: -120, scale: 1.5 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2 }}
+                  className="text-2xl absolute bottom-0 right-0"
+                >
+                  {r.emoji}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {messages.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground mt-8">Welcome to the live! Say something 👋</p>
+          ) : (
+            <div className="space-y-1.5">
+              {messages.map((item) => {
+                const { message: msg, senderName } = item;
+                if (msg.message_type === "join") {
+                  return (
+                    <p key={msg.id} className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-primary">{senderName}</span> {msg.content}
+                    </p>
+                  );
+                }
+                if (msg.message_type === "gift") {
+                  return (
+                    <motion.p
+                      key={msg.id}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-xs"
+                    >
+                      <span className="font-semibold text-primary">{senderName}</span>{" "}
+                      <span className="text-muted-foreground">sent</span>{" "}
+                      <span className="text-lg">{msg.content}</span>
+                    </motion.p>
+                  );
+                }
+                if (msg.message_type === "system") {
+                  return (
+                    <motion.p
+                      key={msg.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-xs text-destructive flex items-center gap-1"
+                    >
+                      <X className="h-3 w-3" />
+                      {msg.content}
+                    </motion.p>
+                  );
+                }
+                return (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-sm"
+                  >
+                    <span className="font-semibold text-primary text-xs">{senderName}</span>{" "}
+                    <span className="text-foreground text-xs">{msg.content}</span>
+                  </motion.div>
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Gift picker */}
+        <AnimatePresence>
+          {showGifts && (
+            <motion.div
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              className="bg-card border-t border-border px-4 py-3"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold text-foreground">Send a reaction</span>
+                <button onClick={() => setShowGifts(false)}>
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex justify-around">
+                {giftReactions.map((g) => (
+                  <motion.button
+                    key={g.label}
+                    whileTap={{ scale: 0.8 }}
+                    onClick={() => handleGift(g.emoji)}
+                    className="flex flex-col items-center gap-1 rounded-xl p-2 hover:bg-muted"
+                  >
+                    <span className="text-2xl">{g.emoji}</span>
+                    <span className="text-[10px] text-muted-foreground">{g.label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Input bar */}
+        <div className="border-t border-border p-3 flex gap-2 items-center">
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={handleEndLive}
-            className="flex h-10 shrink-0 items-center justify-center rounded-full bg-destructive px-3"
+            onClick={() => setShowGifts(!showGifts)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted"
           >
-            <span className="text-xs font-semibold text-primary-foreground">End</span>
+            <Gift className="h-4 w-4 text-primary" />
           </motion.button>
-        )}
-      </div>
-    </div>
+          <input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Say something..."
+            className="flex-1 rounded-xl bg-muted py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleSend}
+            disabled={!newMessage.trim() || sending}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full gradient-love shadow-card disabled:opacity-50"
+          >
+            <Send className="h-4 w-4 text-primary-foreground" />
+          </motion.button>
+          {isHost && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleEndLive}
+              className="flex h-10 shrink-0 items-center justify-center rounded-full bg-destructive px-3"
+            >
+              <span className="text-xs font-semibold text-primary-foreground">End</span>
+            </motion.button>
+          )}
+        </div>
+      </motion.div>
+    </>
   );
 };
 
