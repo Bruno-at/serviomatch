@@ -143,16 +143,16 @@ const VideoTile = ({ participant, isLocal, compact }: ParticipantTile & { compac
       )}
       {/* Name + quality bar */}
       <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
-        <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
-          <span className="text-[10px] font-semibold text-primary-foreground">
-            {isLocal ? "You" : name}
-          </span>
-        </div>
         {!compact && (
-          <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-1">
-            {qualityBars(quality)}
+          <div className="rounded-full bg-foreground/60 backdrop-blur-sm px-2 py-0.5">
+            <span className="text-[10px] font-semibold text-primary-foreground">
+              {isLocal ? "You" : name}
+            </span>
           </div>
         )}
+        <div className={`rounded-full bg-foreground/60 backdrop-blur-sm ${compact ? "px-1.5 py-1" : "px-2 py-1"} ${compact ? "ml-auto" : ""}`}>
+          {qualityBars(quality, compact)}
+        </div>
       </div>
     </div>
   );
