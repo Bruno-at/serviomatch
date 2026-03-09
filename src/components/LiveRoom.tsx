@@ -257,6 +257,24 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                   </motion.button>
                 </div>
               </div>
+              {/* Quick-reply input */}
+              <div className="flex items-center gap-2 px-3 pb-3">
+                <input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Quick reply..."
+                  className="flex-1 rounded-full bg-foreground/20 backdrop-blur-sm py-1.5 px-3 text-xs text-primary-foreground placeholder:text-primary-foreground/50 outline-none focus:ring-2 focus:ring-primary-foreground/30"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleSend}
+                  disabled={!newMessage.trim() || sending}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20 backdrop-blur-sm disabled:opacity-50"
+                >
+                  <Send className="h-3 w-3 text-primary-foreground" />
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
