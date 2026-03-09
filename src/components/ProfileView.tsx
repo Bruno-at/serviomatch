@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
+import SettingsView from "./SettingsView";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
