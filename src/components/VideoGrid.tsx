@@ -445,7 +445,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-20 shrink-0"
               >
-                <VideoTile participant={tile.participant} isLocal={tile.isLocal} compact />
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} compact latencyMs={latencyMs} />
               </motion.div>
             ))}
           </div>
