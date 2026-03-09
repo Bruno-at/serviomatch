@@ -25,9 +25,10 @@ interface ScreenShareInfo {
   isLocal: boolean;
 }
 
-const qualityBars = (quality: ConnectionQuality) => {
+const qualityBars = (quality: ConnectionQuality, compact = false) => {
+  const isUnknown = quality === ConnectionQuality.Unknown;
   const bars = [
-    { filled: quality !== ConnectionQuality.Unknown },
+    { filled: !isUnknown },
     { filled: quality === ConnectionQuality.Good || quality === ConnectionQuality.Excellent },
     { filled: quality === ConnectionQuality.Excellent },
   ];
@@ -38,15 +39,23 @@ const qualityBars = (quality: ConnectionQuality) => {
         ? "bg-yellow-400"
         : quality === ConnectionQuality.Poor
           ? "bg-destructive"
-          : "bg-muted-foreground";
+          : isUnknown
+            ? "bg-muted-foreground/60"
+            : "bg-muted-foreground";
+
+  const scale = compact ? 0.75 : 1;
+  const baseH = [6, 9, 12];
 
   return (
-    <div className="flex items-end gap-[2px]">
+    <div
+      className={`flex items-end gap-[2px] ${isUnknown ? "animate-pulse" : ""}`}
+      title={isUnknown ? "Connecting…" : `Signal: ${quality}`}
+    >
       {bars.map((bar, i) => (
         <div
           key={i}
-          style={{ height: `${6 + i * 3}px` }}
-          className={`w-[3px] rounded-sm ${bar.filled ? color : "bg-foreground/20"}`}
+          style={{ height: `${Math.round(baseH[i] * scale)}px`, width: compact ? "2px" : "3px" }}
+          className={`rounded-sm transition-colors duration-500 ${bar.filled ? color : "bg-foreground/30"}`}
         />
       ))}
     </div>
