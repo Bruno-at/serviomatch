@@ -25,6 +25,7 @@ interface VideoGridProps {
   url: string;
   onDisconnect: () => void;
   onDropped?: () => void;
+  onParticipantLeft?: (participantName: string) => void;
 }
 
 interface ParticipantTile {
