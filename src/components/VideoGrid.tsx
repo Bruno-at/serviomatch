@@ -267,6 +267,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped }: VideoGridProps) => {
   const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
 
   useEffect(() => {
     intentionalDisconnectRef.current = false;
