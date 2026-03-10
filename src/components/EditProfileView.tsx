@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import VoiceIntroRecorder from "./VoiceIntroRecorder";
+import ProfileVideoRecorder from "./ProfileVideoRecorder";
+import PersonalityQuestions, { type PersonalityAnswers } from "./PersonalityQuestions";
 
 const INTEREST_SUGGESTIONS = [
   "Travel", "Photography", "Yoga", "Coffee", "Hiking", "Cooking",
