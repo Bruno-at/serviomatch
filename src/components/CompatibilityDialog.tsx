@@ -10,7 +10,7 @@ interface CompatibilityDialogProps {
   matchedQuestions?: string[];
 }
 
-const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests }: CompatibilityDialogProps) => {
+const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests, matchedQuestions = [] }: CompatibilityDialogProps) => {
   if (!open) return null;
 
   return (
