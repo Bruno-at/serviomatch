@@ -301,12 +301,11 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
             </button>
           </div>
         </div>
-      </div>
 
         {/* Voice Intro */}
         <VoiceIntroRecorder
           voiceUrl={(profile as any).voice_intro_url || null}
-          onUpdate={(url) => {
+          onUpdate={() => {
             // Profile will be refreshed on save
           }}
         />
