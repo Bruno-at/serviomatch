@@ -7,6 +7,7 @@ interface CompatibilityDialogProps {
   name: string;
   score: number;
   sharedInterests: string[];
+  matchedQuestions?: string[];
 }
 
 const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests }: CompatibilityDialogProps) => {
