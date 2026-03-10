@@ -9,6 +9,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Profile } from "@/data/profiles";
+import VoiceIntroPlayer from "./VoiceIntroPlayer";
 
 interface ProfileCardProps {
   profile: Profile;
