@@ -22,7 +22,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState<Tables<"profiles"> | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
-  const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[] } | null>(null);
+  const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
 
   useEffect(() => {
     if (!user) return;
