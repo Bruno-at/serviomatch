@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
 import SettingsView from "./SettingsView";
+import VoiceIntroPlayer from "./VoiceIntroPlayer";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
