@@ -7,6 +7,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
 import SettingsView from "./SettingsView";
 import VoiceIntroPlayer from "./VoiceIntroPlayer";
+import ProfileVideoPlayer from "./ProfileVideoPlayer";
+import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
