@@ -65,6 +65,21 @@ const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests, matc
               </div>
             </div>
           )}
+
+          {matchedQuestions.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <HeartHandshake className="h-3 w-3" /> Same personality picks
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {matchedQuestions.map((q) => (
+                  <span key={q} className="rounded-full bg-accent/10 text-accent px-2.5 py-0.5 text-[10px] font-medium">
+                    {q}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
