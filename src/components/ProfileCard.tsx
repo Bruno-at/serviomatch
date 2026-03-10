@@ -184,8 +184,11 @@ const ProfileCard = ({
 
         {/* Bottom section */}
         <div className="absolute bottom-0 left-0 right-0 h-[45%] bg-card px-4 pt-3 pb-4 flex flex-col justify-between">
-          {/* Interests */}
-          <div className="flex flex-wrap gap-1.5">
+          {/* Voice intro badge + Interests */}
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {(profile as any).voice_intro_url && (
+              <VoiceIntroPlayer voiceUrl={(profile as any).voice_intro_url} size="sm" />
+            )}
             {profile.interests.slice(0, 5).map((interest) => (
               <span
                 key={interest}

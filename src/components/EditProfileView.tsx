@@ -303,6 +303,15 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
         </div>
       </div>
 
+        {/* Voice Intro */}
+        <VoiceIntroRecorder
+          voiceUrl={(profile as any).voice_intro_url || null}
+          onUpdate={(url) => {
+            // Profile will be refreshed on save
+          }}
+        />
+      </div>
+
       {/* Save button */}
       <motion.button
         whileTap={{ scale: 0.97 }}

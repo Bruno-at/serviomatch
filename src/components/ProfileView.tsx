@@ -121,6 +121,12 @@ const ProfileView = () => {
         </p>
       )}
 
+      {(profile as any).voice_intro_url && (
+        <div className="mt-4 w-full">
+          <VoiceIntroPlayer voiceUrl={(profile as any).voice_intro_url} />
+        </div>
+      )}
+
       <div className="mt-6 w-full rounded-2xl bg-card p-4 shadow-card">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-semibold text-foreground">About me</h3>
