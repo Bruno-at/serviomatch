@@ -292,6 +292,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
           name={compatTarget.name}
           score={compatTarget.score}
           sharedInterests={compatTarget.shared}
+          matchedQuestions={compatTarget.matchedQuestions}
         />
       )}
     </div>
