@@ -256,6 +256,7 @@ export type Database = {
           photos: string[] | null
           updated_at: string
           user_id: string
+          voice_intro_url: string | null
         }
         Insert: {
           age?: number | null
@@ -269,6 +270,7 @@ export type Database = {
           photos?: string[] | null
           updated_at?: string
           user_id: string
+          voice_intro_url?: string | null
         }
         Update: {
           age?: number | null
@@ -282,6 +284,7 @@ export type Database = {
           photos?: string[] | null
           updated_at?: string
           user_id?: string
+          voice_intro_url?: string | null
         }
         Relationships: []
       }
