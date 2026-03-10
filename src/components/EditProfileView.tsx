@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import VoiceIntroRecorder from "./VoiceIntroRecorder";
 
 const INTEREST_SUGGESTIONS = [
   "Travel", "Photography", "Yoga", "Coffee", "Hiking", "Cooking",
@@ -300,6 +301,14 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
             </button>
           </div>
         </div>
+
+        {/* Voice Intro */}
+        <VoiceIntroRecorder
+          voiceUrl={(profile as any).voice_intro_url || null}
+          onUpdate={() => {
+            // Profile will be refreshed on save
+          }}
+        />
       </div>
 
       {/* Save button */}

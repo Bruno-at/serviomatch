@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
 import SettingsView from "./SettingsView";
+import VoiceIntroPlayer from "./VoiceIntroPlayer";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
@@ -118,6 +119,12 @@ const ProfileView = () => {
         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
           <MapPin className="h-3 w-3" /> {profile.location}
         </p>
+      )}
+
+      {(profile as any).voice_intro_url && (
+        <div className="mt-4 w-full">
+          <VoiceIntroPlayer voiceUrl={(profile as any).voice_intro_url} />
+        </div>
       )}
 
       <div className="mt-6 w-full rounded-2xl bg-card p-4 shadow-card">
