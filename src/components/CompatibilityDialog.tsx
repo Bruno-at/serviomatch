@@ -7,9 +7,10 @@ interface CompatibilityDialogProps {
   name: string;
   score: number;
   sharedInterests: string[];
+  matchedQuestions?: string[];
 }
 
-const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests }: CompatibilityDialogProps) => {
+const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests, matchedQuestions = [] }: CompatibilityDialogProps) => {
   if (!open) return null;
 
   return (
@@ -59,6 +60,21 @@ const CompatibilityDialog = ({ open, onClose, name, score, sharedInterests }: Co
                 {sharedInterests.map((i) => (
                   <span key={i} className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-medium">
                     {i}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {matchedQuestions.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <HeartHandshake className="h-3 w-3" /> Same personality picks
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {matchedQuestions.map((q) => (
+                  <span key={q} className="rounded-full bg-accent/10 text-accent px-2.5 py-0.5 text-[10px] font-medium">
+                    {q}
                   </span>
                 ))}
               </div>

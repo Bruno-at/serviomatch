@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import VoiceIntroRecorder from "./VoiceIntroRecorder";
+import ProfileVideoRecorder from "./ProfileVideoRecorder";
+import PersonalityQuestions, { type PersonalityAnswers } from "./PersonalityQuestions";
 
 const INTEREST_SUGGESTIONS = [
   "Travel", "Photography", "Yoga", "Coffee", "Hiking", "Cooking",
@@ -305,9 +307,19 @@ const EditProfileView = ({ profile, onSave, onCancel }: EditProfileViewProps) =>
         {/* Voice Intro */}
         <VoiceIntroRecorder
           voiceUrl={(profile as any).voice_intro_url || null}
-          onUpdate={() => {
-            // Profile will be refreshed on save
-          }}
+          onUpdate={() => {}}
+        />
+
+        {/* Profile Video */}
+        <ProfileVideoRecorder
+          videoUrl={(profile as any).video_url || null}
+          onUpdate={() => {}}
+        />
+
+        {/* Personality Questions */}
+        <PersonalityQuestions
+          answers={((profile as any).personality_answers as PersonalityAnswers) || {}}
+          onSave={() => {}}
         />
       </div>
 

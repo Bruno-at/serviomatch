@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQuestions";
 
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
@@ -21,7 +22,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState<Tables<"profiles"> | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
-  const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[] } | null>(null);
+  const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -158,12 +159,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
 
   const handleCompatibility = useCallback(() => {
     if (!currentProfile || !myProfile) return;
-    const myInterests = myProfile.interests || [];
-    const theirInterests = currentProfile.interests || [];
-    const shared = myInterests.filter((i) => theirInterests.includes(i));
-    const total = new Set([...myInterests, ...theirInterests]).size;
-    const score = total > 0 ? Math.round((shared.length / total) * 100) : Math.floor(Math.random() * 40 + 30);
-    setCompatTarget({ name: currentProfile.display_name, score, shared });
+    const result = computeCompatibility(
+      { interests: myProfile.interests, personality_answers: ((myProfile as any).personality_answers || {}) as PersonalityAnswers },
+      { interests: currentProfile.interests, personality_answers: ((currentProfile as any).personality_answers || {}) as PersonalityAnswers }
+    );
+    setCompatTarget({ name: currentProfile.display_name, score: result.score, shared: result.sharedInterests, matchedQuestions: result.matchedQuestions });
   }, [currentProfile, myProfile]);
 
   const handleShare = useCallback(() => {
@@ -292,6 +292,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
           name={compatTarget.name}
           score={compatTarget.score}
           sharedInterests={compatTarget.shared}
+          matchedQuestions={compatTarget.matchedQuestions}
         />
       )}
     </div>

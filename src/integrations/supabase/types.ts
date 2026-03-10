@@ -253,9 +253,11 @@ export type Database = {
           id: string
           interests: string[] | null
           location: string | null
+          personality_answers: Json | null
           photos: string[] | null
           updated_at: string
           user_id: string
+          video_url: string | null
           voice_intro_url: string | null
         }
         Insert: {
@@ -267,9 +269,11 @@ export type Database = {
           id?: string
           interests?: string[] | null
           location?: string | null
+          personality_answers?: Json | null
           photos?: string[] | null
           updated_at?: string
           user_id: string
+          video_url?: string | null
           voice_intro_url?: string | null
         }
         Update: {
@@ -281,9 +285,11 @@ export type Database = {
           id?: string
           interests?: string[] | null
           location?: string | null
+          personality_answers?: Json | null
           photos?: string[] | null
           updated_at?: string
           user_id?: string
+          video_url?: string | null
           voice_intro_url?: string | null
         }
         Relationships: []

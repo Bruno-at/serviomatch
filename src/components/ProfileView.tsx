@@ -7,6 +7,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import EditProfileView from "./EditProfileView";
 import SettingsView from "./SettingsView";
 import VoiceIntroPlayer from "./VoiceIntroPlayer";
+import ProfileVideoPlayer from "./ProfileVideoPlayer";
+import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
 
 const ProfileView = () => {
   const { user, signOut } = useAuth();
@@ -126,6 +128,31 @@ const ProfileView = () => {
           <VoiceIntroPlayer voiceUrl={(profile as any).voice_intro_url} />
         </div>
       )}
+
+      {(profile as any).video_url && (
+        <div className="mt-4 w-full max-w-[200px]">
+          <h3 className="text-sm font-semibold text-foreground mb-2">Profile Video</h3>
+          <ProfileVideoPlayer videoUrl={(profile as any).video_url} compact />
+        </div>
+      )}
+
+      {(() => {
+        const pa = ((profile as any).personality_answers || {}) as PersonalityAnswers;
+        const answered = PERSONALITY_QUESTIONS.filter((q) => pa[q.id]);
+        if (answered.length === 0) return null;
+        return (
+          <div className="mt-4 w-full">
+            <h3 className="text-sm font-semibold text-foreground mb-2">Personality</h3>
+            <div className="flex flex-wrap gap-2">
+              {answered.map((q) => (
+                <span key={q.id} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  {pa[q.id]}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="mt-6 w-full rounded-2xl bg-card p-4 shadow-card">
         <div className="flex justify-between items-center mb-2">
