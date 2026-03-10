@@ -159,12 +159,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
 
   const handleCompatibility = useCallback(() => {
     if (!currentProfile || !myProfile) return;
-    const myInterests = myProfile.interests || [];
-    const theirInterests = currentProfile.interests || [];
-    const shared = myInterests.filter((i) => theirInterests.includes(i));
-    const total = new Set([...myInterests, ...theirInterests]).size;
-    const score = total > 0 ? Math.round((shared.length / total) * 100) : Math.floor(Math.random() * 40 + 30);
-    setCompatTarget({ name: currentProfile.display_name, score, shared });
+    const result = computeCompatibility(
+      { interests: myProfile.interests, personality_answers: ((myProfile as any).personality_answers || {}) as PersonalityAnswers },
+      { interests: currentProfile.interests, personality_answers: ((currentProfile as any).personality_answers || {}) as PersonalityAnswers }
+    );
+    setCompatTarget({ name: currentProfile.display_name, score: result.score, shared: result.sharedInterests, matchedQuestions: result.matchedQuestions });
   }, [currentProfile, myProfile]);
 
   const handleShare = useCallback(() => {
