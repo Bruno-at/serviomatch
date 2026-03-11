@@ -3,10 +3,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import DiscoverView from "@/components/DiscoverView";
-import LiveView from "@/components/LiveView";
+import NearbyView from "@/components/NearbyView";
 import LikesView from "@/components/LikesView";
 import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
+import ProfileVisitorsView from "@/components/ProfileVisitorsView";
 import SavedProfilesView from "@/components/SavedProfilesView";
 import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
 import Auth from "./Auth";
@@ -15,6 +16,7 @@ const Index = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("discover");
   const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
+  const [showVisitors, setShowVisitors] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -63,6 +65,15 @@ const Index = () => {
     );
   }
 
+  if (showVisitors) {
+    return (
+      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
+        <ProfileVisitorsView />
+        <BottomNav active={activeTab} onNavigate={(tab) => { setShowVisitors(false); setActiveTab(tab); }} />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
       {activeTab === "discover" && (
@@ -71,8 +82,8 @@ const Index = () => {
           onShowBookmarks={() => setSavedView("bookmarks")}
         />
       )}
-      {activeTab === "live" && <LiveView />}
-      {activeTab === "likes" && <LikesView />}
+      {activeTab === "nearby" && <NearbyView />}
+      {activeTab === "likes" && <LikesView onShowVisitors={() => setShowVisitors(true)} />}
       {activeTab === "messages" && <MessagesView />}
       {activeTab === "profile" && <ProfileView />}
       <BottomNav active={activeTab} onNavigate={setActiveTab} />

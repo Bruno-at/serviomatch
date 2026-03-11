@@ -68,6 +68,15 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
 
   const currentProfile = profiles[currentIndex];
 
+  // Track profile visit
+  useEffect(() => {
+    if (!user || !currentProfile) return;
+    supabase.from("profile_visitors").upsert(
+      { visitor_id: user.id, visited_id: currentProfile.user_id },
+      { onConflict: "visitor_id,visited_id" }
+    );
+  }, [currentProfile?.user_id, user]);
+
   const handleSwipe = useCallback(
     async (direction: "left" | "right") => {
       if (!user || !currentProfile) return;
