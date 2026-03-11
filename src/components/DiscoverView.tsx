@@ -4,6 +4,7 @@ import { Sparkles, Star, Bookmark } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
+import MatchPopup from "./MatchPopup";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -13,15 +14,17 @@ import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQues
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
   onShowBookmarks?: () => void;
+  onNavigateToChat?: (matchId: string, profile: Tables<"profiles">) => void;
 }
 
-const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) => {
+const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: DiscoverViewProps) => {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState<Tables<"profiles"> | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
+  const [matchPopup, setMatchPopup] = useState<{ matchId: string; matchName: string; matchPhoto: string | null } | null>(null);
   const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
 
   useEffect(() => {
@@ -96,8 +99,12 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
 
         if (mutual) {
           const [u1, u2] = [user.id, currentProfile.user_id].sort();
-          await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
-          toast.success(`It's a match with ${currentProfile.display_name}! 🎉`, { duration: 3000 });
+          const { data: matchData } = await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 }).select().single();
+          setMatchPopup({
+            matchId: matchData?.id || "",
+            matchName: currentProfile.display_name,
+            matchPhoto: currentProfile.avatar_url,
+          });
         } else {
           toast.success(`You liked ${currentProfile.display_name}! 💕`, { duration: 1500 });
         }
@@ -304,6 +311,26 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
           matchedQuestions={compatTarget.matchedQuestions}
         />
       )}
+
+      <MatchPopup
+        open={!!matchPopup}
+        myPhoto={myProfile?.avatar_url}
+        myName={myProfile?.display_name || "You"}
+        matchPhoto={matchPopup?.matchPhoto}
+        matchName={matchPopup?.matchName || ""}
+        onChat={() => {
+          if (matchPopup && onNavigateToChat) {
+            const matchedProfile = profiles.find(
+              (p) => p.display_name === matchPopup.matchName
+            );
+            if (matchedProfile) {
+              onNavigateToChat(matchPopup.matchId, matchedProfile);
+            }
+          }
+          setMatchPopup(null);
+        }}
+        onClose={() => setMatchPopup(null)}
+      />
     </div>
   );
 };

@@ -4,13 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import DiscoverView from "@/components/DiscoverView";
 import NearbyView from "@/components/NearbyView";
+import MatchesView from "@/components/MatchesView";
 import LikesView from "@/components/LikesView";
 import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
 import ProfileVisitorsView from "@/components/ProfileVisitorsView";
 import SavedProfilesView from "@/components/SavedProfilesView";
 import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
+import ChatView from "@/components/ChatView";
 import Auth from "./Auth";
+import type { Tables } from "@/integrations/supabase/types";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -18,6 +21,7 @@ const Index = () => {
   const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
   const [showVisitors, setShowVisitors] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -65,6 +69,18 @@ const Index = () => {
     );
   }
 
+  if (directChat) {
+    return (
+      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
+        <ChatView
+          matchId={directChat.matchId}
+          otherUserProfile={directChat.profile}
+          onBack={() => setDirectChat(null)}
+        />
+      </div>
+    );
+  }
+
   if (showVisitors) {
     return (
       <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
@@ -80,10 +96,11 @@ const Index = () => {
         <DiscoverView
           onShowFavorites={() => setSavedView("favorites")}
           onShowBookmarks={() => setSavedView("bookmarks")}
+          onNavigateToChat={(matchId, profile) => setDirectChat({ matchId, profile })}
         />
       )}
       {activeTab === "nearby" && <NearbyView />}
-      {activeTab === "likes" && <LikesView onShowVisitors={() => setShowVisitors(true)} />}
+      {activeTab === "matches" && <MatchesView />}
       {activeTab === "messages" && <MessagesView />}
       {activeTab === "profile" && <ProfileView />}
       <BottomNav active={activeTab} onNavigate={setActiveTab} />
