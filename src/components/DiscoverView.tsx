@@ -4,12 +4,18 @@ import { Sparkles, Star, Bookmark } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
+import MatchPopup from "./MatchPopup";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQuestions";
 
+interface DiscoverViewProps {
+  onShowFavorites?: () => void;
+  onShowBookmarks?: () => void;
+  onNavigateToChat?: (matchId: string, profile: Tables<"profiles">) => void;
+}
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
   onShowBookmarks?: () => void;
