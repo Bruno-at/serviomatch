@@ -102,8 +102,12 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) =
 
         if (mutual) {
           const [u1, u2] = [user.id, currentProfile.user_id].sort();
-          await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
-          toast.success(`It's a match with ${currentProfile.display_name}! 🎉`, { duration: 3000 });
+          const { data: matchData } = await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 }).select().single();
+          setMatchPopup({
+            matchId: matchData?.id || "",
+            matchName: currentProfile.display_name,
+            matchPhoto: currentProfile.avatar_url,
+          });
         } else {
           toast.success(`You liked ${currentProfile.display_name}! 💕`, { duration: 1500 });
         }
