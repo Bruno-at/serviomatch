@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, User, Flame, Radio, MapPin } from "lucide-react";
+import { Heart, MessageCircle, User, Flame, MapPin, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface BottomNavProps {
@@ -9,7 +9,7 @@ interface BottomNavProps {
 const tabs = [
   { id: "discover", icon: Flame, label: "Discover" },
   { id: "nearby", icon: MapPin, label: "Nearby" },
-  { id: "likes", icon: Heart, label: "Likes" },
+  { id: "matches", icon: Users, label: "Matches" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
   { id: "profile", icon: User, label: "Profile" },
 ];
@@ -24,7 +24,7 @@ const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
             <button
               key={tab.id}
               onClick={() => onNavigate(tab.id)}
-              className="relative flex flex-col items-center gap-0.5 px-4 py-1"
+              className="relative flex flex-col items-center gap-0.5 px-3 py-1"
             >
               {isActive && (
                 <motion.div
