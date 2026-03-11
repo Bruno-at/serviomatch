@@ -243,6 +243,27 @@ export type Database = {
           },
         ]
       }
+      profile_visitors: {
+        Row: {
+          created_at: string
+          id: string
+          visited_id: string
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          visited_id: string
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          visited_id?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -252,7 +273,11 @@ export type Database = {
           display_name: string
           id: string
           interests: string[] | null
+          is_online: boolean | null
+          last_online: string | null
+          latitude: number | null
           location: string | null
+          longitude: number | null
           personality_answers: Json | null
           photos: string[] | null
           updated_at: string
@@ -268,7 +293,11 @@ export type Database = {
           display_name?: string
           id?: string
           interests?: string[] | null
+          is_online?: boolean | null
+          last_online?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           personality_answers?: Json | null
           photos?: string[] | null
           updated_at?: string
@@ -284,7 +313,11 @@ export type Database = {
           display_name?: string
           id?: string
           interests?: string[] | null
+          is_online?: boolean | null
+          last_online?: string | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           personality_answers?: Json | null
           photos?: string[] | null
           updated_at?: string
