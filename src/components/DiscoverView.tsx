@@ -311,6 +311,26 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
           matchedQuestions={compatTarget.matchedQuestions}
         />
       )}
+
+      <MatchPopup
+        open={!!matchPopup}
+        myPhoto={myProfile?.avatar_url}
+        myName={myProfile?.display_name || "You"}
+        matchPhoto={matchPopup?.matchPhoto}
+        matchName={matchPopup?.matchName || ""}
+        onChat={() => {
+          if (matchPopup && onNavigateToChat) {
+            const matchedProfile = profiles.find(
+              (p) => p.display_name === matchPopup.matchName
+            );
+            if (matchedProfile) {
+              onNavigateToChat(matchPopup.matchId, matchedProfile);
+            }
+          }
+          setMatchPopup(null);
+        }}
+        onClose={() => setMatchPopup(null)}
+      />
     </div>
   );
 };
