@@ -16,18 +16,15 @@ interface DiscoverViewProps {
   onShowBookmarks?: () => void;
   onNavigateToChat?: (matchId: string, profile: Tables<"profiles">) => void;
 }
-interface DiscoverViewProps {
-  onShowFavorites?: () => void;
-  onShowBookmarks?: () => void;
-}
 
-const DiscoverView = ({ onShowFavorites, onShowBookmarks }: DiscoverViewProps) => {
+const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: DiscoverViewProps) => {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [myProfile, setMyProfile] = useState<Tables<"profiles"> | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null);
+  const [matchPopup, setMatchPopup] = useState<{ matchId: string; matchName: string; matchPhoto: string | null } | null>(null);
   const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
 
   useEffect(() => {
