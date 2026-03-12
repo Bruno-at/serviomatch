@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, Star, Bookmark } from "lucide-react";
+import { Sparkles, Star, Bookmark, Zap } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
 import MatchPopup from "./MatchPopup";
+import AIRecommendations from "./AIRecommendations";
+import BoostSpotlight from "./BoostSpotlight";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -31,7 +33,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     if (!user) return;
 
     const fetchData = async () => {
-      // Fetch own profile for compatibility
       const { data: myData } = await supabase
         .from("profiles")
         .select("*")
@@ -39,7 +40,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         .maybeSingle();
       setMyProfile(myData);
 
-      // Get blocked users
       const { data: blockedData } = await supabase
         .from("blocks")
         .select("blocked_id")
@@ -62,7 +62,14 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         .not("user_id", "in", `(${excludeIds.join(",")})`)
         .limit(20);
 
-      setProfiles(data || []);
+      // Sort: boosted profiles first
+      const sorted = (data || []).sort((a, b) => {
+        const aBoosted = (a as any).is_boosted && new Date((a as any).boost_expires_at) > new Date() ? 1 : 0;
+        const bBoosted = (b as any).is_boosted && new Date((b as any).boost_expires_at) > new Date() ? 1 : 0;
+        return bBoosted - aBoosted;
+      });
+
+      setProfiles(sorted);
       setLoading(false);
     };
 
@@ -71,7 +78,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   const currentProfile = profiles[currentIndex];
 
-  // Track profile visit
   useEffect(() => {
     if (!user || !currentProfile) return;
     supabase.from("profile_visitors").upsert(
@@ -85,10 +91,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       if (!user || !currentProfile) return;
 
       if (direction === "right") {
-        await supabase.from("likes").insert({
-          liker_id: user.id,
-          liked_id: currentProfile.user_id,
-        });
+        await supabase.from("likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
 
         const { data: mutual } = await supabase
           .from("likes")
@@ -119,43 +122,27 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   const handleSuperLike = useCallback(async () => {
     if (!user || !currentProfile) return;
-    await supabase.from("super_likes").insert({
-      liker_id: user.id,
-      liked_id: currentProfile.user_id,
-    });
-    // Also record as a like
-    await supabase.from("likes").insert({
-      liker_id: user.id,
-      liked_id: currentProfile.user_id,
-    });
+    await supabase.from("super_likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
+    await supabase.from("likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
     toast.success(`🔥 Super Liked ${currentProfile.display_name}!`, { duration: 2000 });
     setCurrentIndex((prev) => prev + 1);
   }, [currentProfile, user]);
 
   const handleFavorite = useCallback(async () => {
     if (!user || !currentProfile) return;
-    await supabase.from("favorites").insert({
-      user_id: user.id,
-      favorited_id: currentProfile.user_id,
-    });
+    await supabase.from("favorites").insert({ user_id: user.id, favorited_id: currentProfile.user_id });
     toast.success(`⭐ Added ${currentProfile.display_name} to favorites`);
   }, [currentProfile, user]);
 
   const handleBookmark = useCallback(async () => {
     if (!user || !currentProfile) return;
-    await supabase.from("bookmarks").insert({
-      user_id: user.id,
-      bookmarked_id: currentProfile.user_id,
-    });
+    await supabase.from("bookmarks").insert({ user_id: user.id, bookmarked_id: currentProfile.user_id });
     toast.success(`🔖 Bookmarked ${currentProfile.display_name}`);
   }, [currentProfile, user]);
 
   const handleWave = useCallback(async () => {
     if (!user || !currentProfile) return;
-    await supabase.from("waves").insert({
-      sender_id: user.id,
-      receiver_id: currentProfile.user_id,
-    });
+    await supabase.from("waves").insert({ sender_id: user.id, receiver_id: currentProfile.user_id });
     toast.success(`👋 Waved at ${currentProfile.display_name}!`);
   }, [currentProfile, user]);
 
@@ -207,32 +194,24 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         </h1>
         <div className="flex items-center gap-2">
           {onShowFavorites && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={onShowFavorites}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9"
-            >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={onShowFavorites}
+              className="flex items-center justify-center rounded-full bg-muted h-9 w-9">
               <Star className="h-4 w-4 text-yellow-500" />
             </motion.button>
           )}
           {onShowBookmarks && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={onShowBookmarks}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9"
-            >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={onShowBookmarks}
+              className="flex items-center justify-center rounded-full bg-muted h-9 w-9">
               <Bookmark className="h-4 w-4 text-accent" />
             </motion.button>
           )}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleBoost}
-            className="flex items-center gap-1 rounded-full gradient-love px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-card"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Boost
-          </motion.button>
+          <BoostSpotlight compact />
         </div>
+      </div>
+
+      {/* AI Recommendations */}
+      <div className="px-4">
+        <AIRecommendations />
       </div>
 
       <div className="relative mx-4 flex-1 mb-4">
@@ -256,7 +235,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                       image: profile.avatar_url || "",
                       interests: profile.interests || [],
                       prompts: [],
-                      verified: true,
+                      verified: !!(profile as any).is_verified,
                     }}
                     isTop={i === 0}
                     onSwipeLeft={() => handleSwipe("left")}
@@ -320,12 +299,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         matchName={matchPopup?.matchName || ""}
         onChat={() => {
           if (matchPopup && onNavigateToChat) {
-            const matchedProfile = profiles.find(
-              (p) => p.display_name === matchPopup.matchName
-            );
-            if (matchedProfile) {
-              onNavigateToChat(matchPopup.matchId, matchedProfile);
-            }
+            const matchedProfile = profiles.find((p) => p.display_name === matchPopup.matchName);
+            if (matchedProfile) onNavigateToChat(matchPopup.matchId, matchedProfile);
           }
           setMatchPopup(null);
         }}
