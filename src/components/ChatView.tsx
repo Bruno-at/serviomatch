@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import VirtualGifts from "./VirtualGifts";
+import GiftAnimation from "./GiftAnimation";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface ChatViewProps {
@@ -16,10 +18,10 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
   const [messages, setMessages] = useState<Tables<"messages">[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [giftEmoji, setGiftEmoji] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Fetch existing messages
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("messages")
@@ -30,27 +32,39 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
     };
     fetchMessages();
 
-    // Subscribe to new messages in real-time
     const channel = supabase
       .channel(`messages:${matchId}`)
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `match_id=eq.${matchId}`,
-        },
+        { event: "INSERT", schema: "public", table: "messages", filter: `match_id=eq.${matchId}` },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as Tables<"messages">]);
         }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [matchId]);
+
+  // Listen for gift animations
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`gifts:${matchId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "gift_transactions", filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          const gift = payload.new as any;
+          if (gift.sender_id !== user.id) {
+            setGiftEmoji(gift.gift_emoji);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [matchId, user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,12 +91,14 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
 
   return (
     <div className="flex h-full flex-col">
+      <GiftAnimation emoji={giftEmoji} onComplete={() => setGiftEmoji(null)} />
+
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
         <button onClick={onBack} className="rounded-full p-1 hover:bg-muted">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1">
           {otherUserProfile.avatar_url ? (
             <img src={otherUserProfile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
           ) : (
@@ -92,6 +108,11 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
           )}
           <span className="font-semibold text-sm text-foreground">{otherUserProfile.display_name}</span>
         </div>
+        <VirtualGifts
+          receiverId={otherUserProfile.user_id}
+          matchId={matchId}
+          onGiftSent={(emoji) => setGiftEmoji(emoji)}
+        />
       </div>
 
       {/* Messages */}

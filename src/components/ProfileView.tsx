@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -8,6 +8,8 @@ import EditProfileView from "./EditProfileView";
 import SettingsView from "./SettingsView";
 import VoiceIntroPlayer from "./VoiceIntroPlayer";
 import ProfileVideoPlayer from "./ProfileVideoPlayer";
+import VerificationFlow from "./VerificationFlow";
+import BoostSpotlight from "./BoostSpotlight";
 import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
 
 const ProfileView = () => {
@@ -35,9 +37,7 @@ const ProfileView = () => {
     );
   }
 
-  if (showSettings) {
-    return <SettingsView onBack={() => setShowSettings(false)} />;
-  }
+  if (showSettings) return <SettingsView onBack={() => setShowSettings(false)} />;
 
   if (editing) {
     return (
@@ -54,7 +54,7 @@ const ProfileView = () => {
 
   return (
     <div className="flex h-full flex-col items-center px-6 pt-4">
-      <div className="flex w-full justify-between items-center mb-6">
+      <div className="flex w-full justify-between items-center mb-4">
         <h1 className="text-2xl font-bold font-display text-foreground">Profile</h1>
         <div className="flex gap-2">
           <button onClick={signOut} className="rounded-full bg-muted p-2">
@@ -66,15 +66,16 @@ const ProfileView = () => {
         </div>
       </div>
 
+      {/* Boost & Spotlight */}
+      <div className="w-full mb-4">
+        <BoostSpotlight compact />
+      </div>
+
       {/* Photo carousel */}
       <div className="relative mb-4 w-full max-w-[200px]">
         {allImages.length > 0 ? (
           <div className="relative aspect-[3/4] rounded-2xl overflow-hidden ring-4 ring-primary/20">
-            <img
-              src={allImages[photoIndex] || allImages[0]}
-              alt="Your profile"
-              className="h-full w-full object-cover"
-            />
+            <img src={allImages[photoIndex] || allImages[0]} alt="Your profile" className="h-full w-full object-cover" />
             {allImages.length > 1 && (
               <>
                 <button
@@ -89,7 +90,6 @@ const ProfileView = () => {
                 >
                   <ChevronRight className="h-4 w-4 text-primary-foreground" />
                 </button>
-                {/* Dots */}
                 <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
                   {allImages.map((_, i) => (
                     <div
@@ -115,13 +115,21 @@ const ProfileView = () => {
 
       <h2 className="text-xl font-bold font-display text-foreground flex items-center gap-1">
         {profile.display_name}{profile.age ? `, ${profile.age}` : ""}
-        <BadgeCheck className="h-5 w-5 text-primary" />
+        {(profile as any).is_verified && <BadgeCheck className="h-5 w-5 text-primary" />}
       </h2>
       {profile.location && (
         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
           <MapPin className="h-3 w-3" /> {profile.location}
         </p>
       )}
+
+      {/* Verification */}
+      <div className="mt-3">
+        <VerificationFlow
+          isVerified={!!(profile as any).is_verified}
+          onVerified={() => setProfile((p) => p ? { ...p, is_verified: true } as any : p)}
+        />
+      </div>
 
       {(profile as any).voice_intro_url && (
         <div className="mt-4 w-full">

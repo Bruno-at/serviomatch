@@ -12,6 +12,7 @@ import ProfileVisitorsView from "@/components/ProfileVisitorsView";
 import SavedProfilesView from "@/components/SavedProfilesView";
 import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
 import ChatView from "@/components/ChatView";
+import SpeedDating from "@/components/SpeedDating";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -20,6 +21,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("discover");
   const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
   const [showVisitors, setShowVisitors] = useState(false);
+  const [showSpeedDating, setShowSpeedDating] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
 
@@ -81,6 +83,14 @@ const Index = () => {
     );
   }
 
+  if (showSpeedDating) {
+    return (
+      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
+        <SpeedDating onBack={() => setShowSpeedDating(false)} />
+      </div>
+    );
+  }
+
   if (showVisitors) {
     return (
       <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
@@ -103,7 +113,11 @@ const Index = () => {
       {activeTab === "matches" && <MatchesView />}
       {activeTab === "messages" && <MessagesView />}
       {activeTab === "profile" && <ProfileView />}
-      <BottomNav active={activeTab} onNavigate={setActiveTab} />
+      <BottomNav
+        active={activeTab}
+        onNavigate={setActiveTab}
+        onSpeedDating={() => setShowSpeedDating(true)}
+      />
     </div>
   );
 };
