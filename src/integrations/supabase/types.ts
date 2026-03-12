@@ -101,6 +101,71 @@ export type Database = {
         }
         Relationships: []
       }
+      gift_catalog: {
+        Row: {
+          coin_cost: number
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+        }
+        Insert: {
+          coin_cost?: number
+          created_at?: string
+          emoji: string
+          id?: string
+          name: string
+        }
+        Update: {
+          coin_cost?: number
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      gift_transactions: {
+        Row: {
+          coin_cost: number
+          created_at: string
+          gift_emoji: string
+          gift_name: string
+          id: string
+          match_id: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          coin_cost?: number
+          created_at?: string
+          gift_emoji: string
+          gift_name: string
+          id?: string
+          match_id?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          coin_cost?: number
+          created_at?: string
+          gift_emoji?: string
+          gift_name?: string
+          id?: string
+          match_id?: string | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_transactions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           created_at: string
@@ -269,19 +334,25 @@ export type Database = {
           age: number | null
           avatar_url: string | null
           bio: string | null
+          boost_expires_at: string | null
           created_at: string
           display_name: string
           id: string
           interests: string[] | null
+          is_boosted: boolean | null
           is_online: boolean | null
+          is_spotlight: boolean | null
+          is_verified: boolean | null
           last_online: string | null
           latitude: number | null
           location: string | null
           longitude: number | null
           personality_answers: Json | null
           photos: string[] | null
+          spotlight_expires_at: string | null
           updated_at: string
           user_id: string
+          verification_selfie_url: string | null
           video_url: string | null
           voice_intro_url: string | null
         }
@@ -289,19 +360,25 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           bio?: string | null
+          boost_expires_at?: string | null
           created_at?: string
           display_name?: string
           id?: string
           interests?: string[] | null
+          is_boosted?: boolean | null
           is_online?: boolean | null
+          is_spotlight?: boolean | null
+          is_verified?: boolean | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           personality_answers?: Json | null
           photos?: string[] | null
+          spotlight_expires_at?: string | null
           updated_at?: string
           user_id: string
+          verification_selfie_url?: string | null
           video_url?: string | null
           voice_intro_url?: string | null
         }
@@ -309,19 +386,25 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           bio?: string | null
+          boost_expires_at?: string | null
           created_at?: string
           display_name?: string
           id?: string
           interests?: string[] | null
+          is_boosted?: boolean | null
           is_online?: boolean | null
+          is_spotlight?: boolean | null
+          is_verified?: boolean | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           personality_answers?: Json | null
           photos?: string[] | null
+          spotlight_expires_at?: string | null
           updated_at?: string
           user_id?: string
+          verification_selfie_url?: string | null
           video_url?: string | null
           voice_intro_url?: string | null
         }
@@ -351,6 +434,39 @@ export type Database = {
         }
         Relationships: []
       }
+      speed_dating_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          user1_id: string
+          user1_liked: boolean | null
+          user2_id: string
+          user2_liked: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          user1_id: string
+          user1_liked?: boolean | null
+          user2_id: string
+          user2_liked?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          user1_id?: string
+          user1_liked?: boolean | null
+          user2_id?: string
+          user2_liked?: boolean | null
+        }
+        Relationships: []
+      }
       super_likes: {
         Row: {
           created_at: string
@@ -369,6 +485,30 @@ export type Database = {
           id?: string
           liked_id?: string
           liker_id?: string
+        }
+        Relationships: []
+      }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
