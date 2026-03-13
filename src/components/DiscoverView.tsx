@@ -210,6 +210,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         </div>
       </div>
 
+      {/* Nearby Tonight */}
+      <div className="px-4">
+        <NearbyTonight onNavigateToChat={onNavigateToChat} />
+      </div>
+
       {/* AI Recommendations */}
       <div className="px-4">
         <AIRecommendations />

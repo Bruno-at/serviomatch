@@ -119,9 +119,16 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground mt-10">
-            Say hi to start the conversation! 👋
-          </p>
+          <>
+            <p className="text-center text-sm text-muted-foreground mt-6 mb-3">
+              Say hi to start the conversation! 👋
+            </p>
+            <IcebreakerQuestions
+              onSelect={(q) => {
+                setNewMessage(q);
+              }}
+            />
+          </>
         )}
         {messages.map((msg) => {
           const isMine = msg.sender_id === user?.id;
