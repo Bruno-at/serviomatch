@@ -5,6 +5,7 @@ interface BottomNavProps {
   active: string;
   onNavigate: (tab: string) => void;
   onSpeedDating?: () => void;
+  onChallenges?: () => void;
 }
 
 const tabs = [
