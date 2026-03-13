@@ -13,6 +13,7 @@ import SavedProfilesView from "@/components/SavedProfilesView";
 import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
 import ChatView from "@/components/ChatView";
 import SpeedDating from "@/components/SpeedDating";
+import ChallengesView from "@/components/ChallengesView";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -22,6 +23,7 @@ const Index = () => {
   const [savedView, setSavedView] = useState<"favorites" | "bookmarks" | null>(null);
   const [showVisitors, setShowVisitors] = useState(false);
   const [showSpeedDating, setShowSpeedDating] = useState(false);
+  const [showChallenges, setShowChallenges] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
 
@@ -91,6 +93,14 @@ const Index = () => {
     );
   }
 
+  if (showChallenges) {
+    return (
+      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
+        <ChallengesView onBack={() => setShowChallenges(false)} />
+      </div>
+    );
+  }
+
   if (showVisitors) {
     return (
       <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
@@ -117,6 +127,7 @@ const Index = () => {
         active={activeTab}
         onNavigate={setActiveTab}
         onSpeedDating={() => setShowSpeedDating(true)}
+        onChallenges={() => setShowChallenges(true)}
       />
     </div>
   );

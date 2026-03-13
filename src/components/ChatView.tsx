@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import VirtualGifts from "./VirtualGifts";
 import GiftAnimation from "./GiftAnimation";
+import IcebreakerQuestions from "./IcebreakerQuestions";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface ChatViewProps {
@@ -118,9 +119,16 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground mt-10">
-            Say hi to start the conversation! 👋
-          </p>
+          <>
+            <p className="text-center text-sm text-muted-foreground mt-6 mb-3">
+              Say hi to start the conversation! 👋
+            </p>
+            <IcebreakerQuestions
+              onSelect={(q) => {
+                setNewMessage(q);
+              }}
+            />
+          </>
         )}
         {messages.map((msg) => {
           const isMine = msg.sender_id === user?.id;

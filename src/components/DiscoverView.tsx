@@ -7,6 +7,7 @@ import CompatibilityDialog from "./CompatibilityDialog";
 import MatchPopup from "./MatchPopup";
 import AIRecommendations from "./AIRecommendations";
 import BoostSpotlight from "./BoostSpotlight";
+import NearbyTonight from "./NearbyTonight";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -207,6 +208,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
           )}
           <BoostSpotlight compact />
         </div>
+      </div>
+
+      {/* Nearby Tonight */}
+      <div className="px-4">
+        <NearbyTonight onNavigateToChat={onNavigateToChat} />
       </div>
 
       {/* AI Recommendations */}

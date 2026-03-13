@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      challenges: {
+        Row: {
+          active: boolean
+          challenge_type: string
+          created_at: string
+          description: string
+          emoji: string
+          id: string
+          reward_badge: string | null
+          reward_coins: number
+          target_count: number
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          challenge_type?: string
+          created_at?: string
+          description: string
+          emoji?: string
+          id?: string
+          reward_badge?: string | null
+          reward_coins?: number
+          target_count?: number
+          title: string
+        }
+        Update: {
+          active?: boolean
+          challenge_type?: string
+          created_at?: string
+          description?: string
+          emoji?: string
+          id?: string
+          reward_badge?: string | null
+          reward_coins?: number
+          target_count?: number
+          title?: string
+        }
+        Relationships: []
+      }
       compliments: {
         Row: {
           created_at: string
@@ -332,6 +371,7 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          available_tonight: boolean | null
           avatar_url: string | null
           bio: string | null
           boost_expires_at: string | null
@@ -358,6 +398,7 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          available_tonight?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           boost_expires_at?: string | null
@@ -384,6 +425,7 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          available_tonight?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           boost_expires_at?: string | null
@@ -487,6 +529,71 @@ export type Database = {
           liker_id?: string
         }
         Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_emoji: string
+          badge_name: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_emoji: string
+          badge_name: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_emoji?: string
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          user_id: string
+          week_start?: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_coins: {
         Row: {
