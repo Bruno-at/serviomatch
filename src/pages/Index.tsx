@@ -65,67 +65,61 @@ const Index = () => {
     return <PhotoUploadOnboarding onComplete={() => setNeedsOnboarding(false)} />;
   }
 
-  if (savedView) {
-    return (
-      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
-        <SavedProfilesView type={savedView} onBack={() => setSavedView(null)} />
-      </div>
-    );
-  }
+  const handleNavigate = (tab: string) => {
+    setSavedView(null);
+    setDirectChat(null);
+    setShowSpeedDating(false);
+    setShowChallenges(false);
+    setShowVisitors(false);
+    setActiveTab(tab);
+  };
 
-  if (directChat) {
-    return (
-      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
+  const renderContent = () => {
+    if (savedView) {
+      return <SavedProfilesView type={savedView} onBack={() => setSavedView(null)} />;
+    }
+    if (directChat) {
+      return (
         <ChatView
           matchId={directChat.matchId}
           otherUserProfile={directChat.profile}
           onBack={() => setDirectChat(null)}
         />
-      </div>
-    );
-  }
+      );
+    }
+    if (showSpeedDating) {
+      return <SpeedDating onBack={() => setShowSpeedDating(false)} />;
+    }
+    if (showChallenges) {
+      return <ChallengesView onBack={() => setShowChallenges(false)} />;
+    }
+    if (showVisitors) {
+      return <ProfileVisitorsView />;
+    }
 
-  if (showSpeedDating) {
     return (
-      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
-        <SpeedDating onBack={() => setShowSpeedDating(false)} />
-      </div>
+      <>
+        {activeTab === "discover" && (
+          <DiscoverView
+            onShowFavorites={() => setSavedView("favorites")}
+            onShowBookmarks={() => setSavedView("bookmarks")}
+            onNavigateToChat={(matchId, profile) => setDirectChat({ matchId, profile })}
+          />
+        )}
+        {activeTab === "nearby" && <NearbyView />}
+        {activeTab === "matches" && <MatchesView />}
+        {activeTab === "messages" && <MessagesView />}
+        {activeTab === "profile" && <ProfileView />}
+      </>
     );
-  }
-
-  if (showChallenges) {
-    return (
-      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto">
-        <ChallengesView onBack={() => setShowChallenges(false)} />
-      </div>
-    );
-  }
-
-  if (showVisitors) {
-    return (
-      <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
-        <ProfileVisitorsView />
-        <BottomNav active={activeTab} onNavigate={(tab) => { setShowVisitors(false); setActiveTab(tab); }} />
-      </div>
-    );
-  }
+  };
 
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
-      {activeTab === "discover" && (
-        <DiscoverView
-          onShowFavorites={() => setSavedView("favorites")}
-          onShowBookmarks={() => setSavedView("bookmarks")}
-          onNavigateToChat={(matchId, profile) => setDirectChat({ matchId, profile })}
-        />
-      )}
-      {activeTab === "nearby" && <NearbyView />}
-      {activeTab === "matches" && <MatchesView />}
-      {activeTab === "messages" && <MessagesView />}
-      {activeTab === "profile" && <ProfileView />}
+      {renderContent()}
       <BottomNav
         active={activeTab}
-        onNavigate={setActiveTab}
+        onNavigate={handleNavigate}
         onSpeedDating={() => setShowSpeedDating(true)}
         onChallenges={() => setShowChallenges(true)}
       />
