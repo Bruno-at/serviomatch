@@ -18,7 +18,7 @@ const tabs = [
   { id: "profile", icon: User, label: "Profile" },
 ];
 
-const BottomNav = ({ active, onNavigate, onSpeedDating }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges }: BottomNavProps) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-md items-center justify-around py-2">
