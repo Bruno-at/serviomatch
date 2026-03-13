@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import VirtualGifts from "./VirtualGifts";
 import GiftAnimation from "./GiftAnimation";
+import IcebreakerQuestions from "./IcebreakerQuestions";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface ChatViewProps {
