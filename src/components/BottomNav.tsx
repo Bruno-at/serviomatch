@@ -13,6 +13,7 @@ const tabs = [
   { id: "nearby", icon: MapPin, label: "Nearby" },
   { id: "speed", icon: Zap, label: "Speed" },
   { id: "matches", icon: Users, label: "Matches" },
+  { id: "challenges", icon: Trophy, label: "Ranks" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
   { id: "profile", icon: User, label: "Profile" },
 ];
