@@ -294,6 +294,38 @@ export type Database = {
         }
         Relationships: []
       }
+      match_streaks: {
+        Row: {
+          id: string
+          last_message_date: string
+          match_id: string
+          streak_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_message_date?: string
+          match_id: string
+          streak_count?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_message_date?: string
+          match_id?: string
+          streak_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_streaks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           created_at: string
@@ -527,6 +559,30 @@ export type Database = {
           id?: string
           liked_id?: string
           liker_id?: string
+        }
+        Relationships: []
+      }
+      swipe_history: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          swiped_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          swiped_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          swiped_id?: string
+          user_id?: string
         }
         Relationships: []
       }
