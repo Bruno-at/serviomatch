@@ -15,6 +15,7 @@ const tabs = [
   { id: "nearby", icon: MapPin, label: "Nearby" },
   { id: "live", icon: Radio, label: "Live" },
   { id: "speed", icon: Zap, label: "Speed" },
+  { id: "crush", icon: Lock, label: "Crush" },
   { id: "matches", icon: Users, label: "Matches" },
   { id: "challenges", icon: Trophy, label: "Ranks" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
