@@ -60,6 +60,7 @@ const Index = () => {
     setShowChallenges(false);
     setShowVisitors(false);
     setShowLive(false);
+    setShowCrush(false);
     setActiveTab(tab);
   };
 
