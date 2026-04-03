@@ -71,6 +71,7 @@ const Index = () => {
     if (showChallenges) return <ChallengesView onBack={() => setShowChallenges(false)} />;
     if (showVisitors) return <ProfileVisitorsView />;
     if (showLive) return <LiveView />;
+    if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
 
     return (
       <>
