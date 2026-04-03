@@ -34,7 +34,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
       >
         {tabs.map((tab) => {
           const isActive = active === tab.id;
-          const isSpecial = tab.id === "speed" || tab.id === "challenges" || tab.id === "live";
+          const isSpecial = tab.id === "speed" || tab.id === "challenges" || tab.id === "live" || tab.id === "crush";
           return (
             <button
               key={tab.id}
@@ -42,6 +42,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
                 if (tab.id === "speed" && onSpeedDating) onSpeedDating();
                 else if (tab.id === "challenges" && onChallenges) onChallenges();
                 else if (tab.id === "live" && onLive) onLive();
+                else if (tab.id === "crush" && onCrush) onCrush();
                 else if (!isSpecial) onNavigate(tab.id);
               }}
               className="relative flex flex-col items-center gap-0.5 px-2 py-1 shrink-0 min-w-[44px]"
