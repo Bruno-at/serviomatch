@@ -296,6 +296,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                   onCompatibility={handleCompatibility}
                   onShare={handleShare}
                   onReport={handleReport}
+                  onSecretCrush={handleSecretCrush}
                 />
               )).reverse()
             ) : (
