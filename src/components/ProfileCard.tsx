@@ -24,6 +24,7 @@ interface ProfileCardProps {
   onShare?: () => void;
   onReport?: () => void;
   onCompatibility?: () => void;
+  onSecretCrush?: () => void;
   isTop: boolean;
 }
 
