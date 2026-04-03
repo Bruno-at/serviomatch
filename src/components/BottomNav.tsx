@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio } from "lucide-react";
+import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
@@ -8,6 +8,7 @@ interface BottomNavProps {
   onSpeedDating?: () => void;
   onChallenges?: () => void;
   onLive?: () => void;
+  onCrush?: () => void;
 }
 
 const tabs = [
@@ -15,13 +16,14 @@ const tabs = [
   { id: "nearby", icon: MapPin, label: "Nearby" },
   { id: "live", icon: Radio, label: "Live" },
   { id: "speed", icon: Zap, label: "Speed" },
+  { id: "crush", icon: Lock, label: "Crush" },
   { id: "matches", icon: Users, label: "Matches" },
   { id: "challenges", icon: Trophy, label: "Ranks" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
-const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush }: BottomNavProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -32,7 +34,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive }: 
       >
         {tabs.map((tab) => {
           const isActive = active === tab.id;
-          const isSpecial = tab.id === "speed" || tab.id === "challenges" || tab.id === "live";
+          const isSpecial = tab.id === "speed" || tab.id === "challenges" || tab.id === "live" || tab.id === "crush";
           return (
             <button
               key={tab.id}
@@ -40,6 +42,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive }: 
                 if (tab.id === "speed" && onSpeedDating) onSpeedDating();
                 else if (tab.id === "challenges" && onChallenges) onChallenges();
                 else if (tab.id === "live" && onLive) onLive();
+                else if (tab.id === "crush" && onCrush) onCrush();
                 else if (!isSpecial) onNavigate(tab.id);
               }}
               className="relative flex flex-col items-center gap-0.5 px-2 py-1 shrink-0 min-w-[44px]"

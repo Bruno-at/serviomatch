@@ -3,7 +3,7 @@ import { motion, type PanInfo, AnimatePresence } from "framer-motion";
 import {
   Heart, X, MapPin, BadgeCheck, MessageCircle, Star, Bookmark,
   Flame, Hand, Zap, MessageSquareHeart, HeartHandshake, Share2,
-  ShieldAlert, Play, Mic
+  ShieldAlert, Play, Mic, Lock
 } from "lucide-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -24,6 +24,7 @@ interface ProfileCardProps {
   onShare?: () => void;
   onReport?: () => void;
   onCompatibility?: () => void;
+  onSecretCrush?: () => void;
   isTop: boolean;
 }
 
@@ -74,7 +75,7 @@ const ActionButton = ({
 
 const ProfileCard = ({
   profile, onSwipeLeft, onSwipeRight, onSuperLike, onFavorite, onBookmark,
-  onWave, onBoost, onCompliment, onShare, onReport, onCompatibility, isTop,
+  onWave, onBoost, onCompliment, onShare, onReport, onCompatibility, onSecretCrush, isTop,
 }: ProfileCardProps) => {
   const [showCompliments, setShowCompliments] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<"like" | "pass" | "super" | "save" | null>(null);
@@ -241,6 +242,8 @@ const ProfileCard = ({
                 className="border-2 border-pink-400/30 bg-card hover:bg-pink-400/10" iconClassName="text-pink-500" />}
               {onCompatibility && <ActionButton icon={HeartHandshake} label="Check compatibility" onClick={onCompatibility}
                 className="border-2 border-primary/30 bg-card hover:bg-primary/10" iconClassName="text-primary" />}
+              {onSecretCrush && <ActionButton icon={Lock} label="Secret Crush 💖🔒" onClick={onSecretCrush}
+                className="border-2 border-pink-400/30 bg-card hover:bg-pink-400/10" iconClassName="text-pink-500" />}
             </div>
           )}
         </div>

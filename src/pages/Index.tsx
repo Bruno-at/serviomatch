@@ -15,6 +15,7 @@ import ChatView from "@/components/ChatView";
 import SpeedDating from "@/components/SpeedDating";
 import ChallengesView from "@/components/ChallengesView";
 import LiveView from "@/components/LiveView";
+import SecretCrushView from "@/components/SecretCrushView";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -26,6 +27,7 @@ const Index = () => {
   const [showSpeedDating, setShowSpeedDating] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showLive, setShowLive] = useState(false);
+  const [showCrush, setShowCrush] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
 
@@ -58,6 +60,7 @@ const Index = () => {
     setShowChallenges(false);
     setShowVisitors(false);
     setShowLive(false);
+    setShowCrush(false);
     setActiveTab(tab);
   };
 
@@ -68,6 +71,7 @@ const Index = () => {
     if (showChallenges) return <ChallengesView onBack={() => setShowChallenges(false)} />;
     if (showVisitors) return <ProfileVisitorsView />;
     if (showLive) return <LiveView />;
+    if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
 
     return (
       <>
@@ -89,9 +93,10 @@ const Index = () => {
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
-        onSpeedDating={() => { setShowLive(false); setShowChallenges(false); setShowSpeedDating(true); }}
-        onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowChallenges(true); }}
-        onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(true); }}
+        onSpeedDating={() => { setShowLive(false); setShowChallenges(false); setShowCrush(false); setShowSpeedDating(true); }}
+        onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowCrush(false); setShowChallenges(true); }}
+        onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowCrush(false); setShowLive(true); }}
+        onCrush={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(false); setShowCrush(true); }}
       />
     </div>
   );

@@ -508,6 +508,30 @@ export type Database = {
         }
         Relationships: []
       }
+      secret_crushes: {
+        Row: {
+          created_at: string
+          crushed_id: string
+          crusher_id: string
+          id: string
+          is_mutual: boolean
+        }
+        Insert: {
+          created_at?: string
+          crushed_id: string
+          crusher_id: string
+          id?: string
+          is_mutual?: boolean
+        }
+        Update: {
+          created_at?: string
+          crushed_id?: string
+          crusher_id?: string
+          id?: string
+          is_mutual?: boolean
+        }
+        Relationships: []
+      }
       speed_dating_sessions: {
         Row: {
           created_at: string
