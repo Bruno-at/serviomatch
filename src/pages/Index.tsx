@@ -93,9 +93,10 @@ const Index = () => {
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
-        onSpeedDating={() => { setShowLive(false); setShowChallenges(false); setShowSpeedDating(true); }}
-        onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowChallenges(true); }}
-        onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(true); }}
+        onSpeedDating={() => { setShowLive(false); setShowChallenges(false); setShowCrush(false); setShowSpeedDating(true); }}
+        onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowCrush(false); setShowChallenges(true); }}
+        onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowCrush(false); setShowLive(true); }}
+        onCrush={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(false); setShowCrush(true); }}
       />
     </div>
   );
