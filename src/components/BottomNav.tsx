@@ -8,6 +8,7 @@ interface BottomNavProps {
   onSpeedDating?: () => void;
   onChallenges?: () => void;
   onLive?: () => void;
+  onCrush?: () => void;
 }
 
 const tabs = [
