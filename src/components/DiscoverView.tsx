@@ -193,6 +193,34 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     setReportTarget({ id: currentProfile.user_id, name: currentProfile.display_name });
   }, [currentProfile]);
 
+  const handleSecretCrush = useCallback(async () => {
+    if (!user || !currentProfile) return;
+    const { error } = await supabase
+      .from("secret_crushes")
+      .insert({ crusher_id: user.id, crushed_id: currentProfile.user_id });
+    if (error) {
+      if (error.code === "23505") toast.info("Already in your crush list 💖");
+      else toast.error("Failed to add secret crush");
+      return;
+    }
+    // Check mutual
+    const { data: reverse } = await supabase
+      .from("secret_crushes")
+      .select("id")
+      .eq("crusher_id", currentProfile.user_id)
+      .eq("crushed_id", user.id)
+      .maybeSingle();
+    if (reverse) {
+      await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", user.id).eq("crushed_id", currentProfile.user_id);
+      await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id);
+      const [u1, u2] = [user.id, currentProfile.user_id].sort();
+      await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
+      toast.success("💖 It's a Secret Match!");
+    } else {
+      toast.success(`💖🔒 Added ${currentProfile.display_name} as a secret crush`);
+    }
+  }, [currentProfile, user]);
+
   const remaining = profiles.slice(currentIndex, currentIndex + 2);
 
   return (
