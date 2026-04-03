@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio } from "lucide-react";
+import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
