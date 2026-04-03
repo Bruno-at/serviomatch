@@ -23,7 +23,7 @@ const tabs = [
   { id: "profile", icon: User, label: "Profile" },
 ];
 
-const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush }: BottomNavProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
