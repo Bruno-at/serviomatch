@@ -27,6 +27,7 @@ const Index = () => {
   const [showSpeedDating, setShowSpeedDating] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showLive, setShowLive] = useState(false);
+  const [showCrush, setShowCrush] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
 
