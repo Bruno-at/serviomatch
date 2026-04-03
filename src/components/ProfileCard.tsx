@@ -3,7 +3,7 @@ import { motion, type PanInfo, AnimatePresence } from "framer-motion";
 import {
   Heart, X, MapPin, BadgeCheck, MessageCircle, Star, Bookmark,
   Flame, Hand, Zap, MessageSquareHeart, HeartHandshake, Share2,
-  ShieldAlert, Play, Mic
+  ShieldAlert, Play, Mic, Lock
 } from "lucide-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
