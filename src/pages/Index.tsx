@@ -15,6 +15,7 @@ import ChatView from "@/components/ChatView";
 import SpeedDating from "@/components/SpeedDating";
 import ChallengesView from "@/components/ChallengesView";
 import LiveView from "@/components/LiveView";
+import SecretCrushView from "@/components/SecretCrushView";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
