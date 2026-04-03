@@ -75,7 +75,7 @@ const ActionButton = ({
 
 const ProfileCard = ({
   profile, onSwipeLeft, onSwipeRight, onSuperLike, onFavorite, onBookmark,
-  onWave, onBoost, onCompliment, onShare, onReport, onCompatibility, isTop,
+  onWave, onBoost, onCompliment, onShare, onReport, onCompatibility, onSecretCrush, isTop,
 }: ProfileCardProps) => {
   const [showCompliments, setShowCompliments] = useState(false);
   const [swipeOverlay, setSwipeOverlay] = useState<"like" | "pass" | "super" | "save" | null>(null);
