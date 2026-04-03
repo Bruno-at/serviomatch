@@ -242,6 +242,8 @@ const ProfileCard = ({
                 className="border-2 border-pink-400/30 bg-card hover:bg-pink-400/10" iconClassName="text-pink-500" />}
               {onCompatibility && <ActionButton icon={HeartHandshake} label="Check compatibility" onClick={onCompatibility}
                 className="border-2 border-primary/30 bg-card hover:bg-primary/10" iconClassName="text-primary" />}
+              {onSecretCrush && <ActionButton icon={Lock} label="Secret Crush 💖🔒" onClick={onSecretCrush}
+                className="border-2 border-pink-400/30 bg-card hover:bg-pink-400/10" iconClassName="text-pink-500" />}
             </div>
           )}
         </div>
