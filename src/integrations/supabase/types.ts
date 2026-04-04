@@ -119,6 +119,45 @@ export type Database = {
         }
         Relationships: []
       }
+      crush_events: {
+        Row: {
+          created_at: string
+          crush_limit_override: number | null
+          description: string
+          emoji: string
+          end_time: string
+          event_type: string
+          id: string
+          reveal_mutual: boolean
+          start_time: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          crush_limit_override?: number | null
+          description?: string
+          emoji?: string
+          end_time: string
+          event_type?: string
+          id?: string
+          reveal_mutual?: boolean
+          start_time: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          crush_limit_override?: number | null
+          description?: string
+          emoji?: string
+          end_time?: string
+          event_type?: string
+          id?: string
+          reveal_mutual?: boolean
+          start_time?: string
+          title?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
