@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Send, Gift, Eye, Heart, Share2, UserPlus, MessageCircle,
-  Video, VideoOff, Mic, MicOff, WifiOff, RefreshCw, Loader2, SwitchCamera
+  Video, VideoOff, Mic, MicOff, WifiOff, RefreshCw, Loader2, SwitchCamera,
+  Check, XCircle, Hand, Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,14 @@ interface LiveRoomProps {
 interface MessageWithSender {
   message: Tables<"live_messages">;
   senderName: string;
+}
+
+interface JoinRequest {
+  id: string;
+  user_id: string;
+  status: string;
+  displayName: string;
+  avatarUrl: string | null;
 }
 
 const giftReactions = [
@@ -51,21 +60,32 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   const [mediaReady, setMediaReady] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+
+  // Join request states
+  const [joinRequestStatus, setJoinRequestStatus] = useState<"none" | "pending" | "accepted" | "rejected">("none");
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [showRequests, setShowRequests] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const reactionId = useRef(0);
   const isHost = user?.id === room.host_id;
-  const profileCache = useRef<Map<string, string>>(new Map());
+  const profileCache = useRef<Map<string, { name: string; avatar: string | null }>>(new Map());
 
-  const getSenderName = async (senderId: string): Promise<string> => {
-    if (profileCache.current.has(senderId)) return profileCache.current.get(senderId)!;
+  const getProfile = async (userId: string): Promise<{ name: string; avatar: string | null }> => {
+    if (profileCache.current.has(userId)) return profileCache.current.get(userId)!;
     const { data } = await supabase
       .from("profiles")
-      .select("display_name")
-      .eq("user_id", senderId)
+      .select("display_name, avatar_url")
+      .eq("user_id", userId)
       .single();
-    const name = data?.display_name || "User";
-    profileCache.current.set(senderId, name);
-    return name;
+    const profile = { name: data?.display_name || "User", avatar: data?.avatar_url || null };
+    profileCache.current.set(userId, profile);
+    return profile;
+  };
+
+  const getSenderName = async (senderId: string): Promise<string> => {
+    const p = await getProfile(senderId);
+    return p.name;
   };
 
   const handleVideoDropped = () => setWasDisconnected(true);
@@ -107,8 +127,82 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     }
   };
 
-  // Auto-join video for everyone (host + viewer)
+  // Send a join request (viewer only)
+  const sendJoinRequest = async () => {
+    if (!user) return;
+    setJoinRequestStatus("pending");
+    const { error } = await supabase.from("live_join_requests").insert({
+      room_id: room.id,
+      user_id: user.id,
+      status: "pending",
+    });
+    if (error) {
+      toast.error("Failed to send request");
+      setJoinRequestStatus("none");
+    } else {
+      toast("Request sent! Waiting for host to accept… ✋");
+    }
+  };
+
+  // Host accepts/rejects a request
+  const handleRequest = async (requestId: string, action: "accepted" | "rejected") => {
+    await supabase
+      .from("live_join_requests")
+      .update({ status: action })
+      .eq("id", requestId);
+    setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
+    toast(action === "accepted" ? "User accepted ✅" : "Request rejected");
+  };
+
+  // Fetch pending requests (host)
+  const fetchJoinRequests = async () => {
+    if (!isHost) return;
+    const { data } = await supabase
+      .from("live_join_requests")
+      .select("*")
+      .eq("room_id", room.id)
+      .eq("status", "pending");
+
+    if (data && data.length > 0) {
+      const enriched: JoinRequest[] = [];
+      for (const req of data) {
+        const p = await getProfile(req.user_id);
+        enriched.push({
+          id: req.id,
+          user_id: req.user_id,
+          status: req.status,
+          displayName: p.name,
+          avatarUrl: p.avatar,
+        });
+      }
+      setJoinRequests(enriched);
+    } else {
+      setJoinRequests([]);
+    }
+  };
+
+  // Check viewer's own request status
+  const checkOwnRequest = async () => {
+    if (isHost || !user) return;
+    const { data } = await supabase
+      .from("live_join_requests")
+      .select("*")
+      .eq("room_id", room.id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (data && data.length > 0) {
+      const status = data[0].status as "pending" | "accepted" | "rejected";
+      setJoinRequestStatus(status);
+      if (status === "accepted") {
+        joinVideo();
+      }
+    }
+  };
+
   useEffect(() => {
+    // Viewer increment & join message
     if (!isHost) {
       supabase
         .from("live_rooms")
@@ -123,9 +217,14 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       });
     }
 
-    // Auto-join video for both host and viewers
-    joinVideo();
+    // Host auto-joins video, viewers must request
+    if (isHost) {
+      joinVideo();
+    } else {
+      checkOwnRequest();
+    }
 
+    // Fetch messages
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("live_messages")
@@ -145,7 +244,11 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     };
     fetchMessages();
 
-    const channel = supabase
+    // Fetch join requests if host
+    if (isHost) fetchJoinRequests();
+
+    // Realtime: messages
+    const msgChannel = supabase
       .channel(`live:${room.id}`)
       .on(
         "postgres_changes",
@@ -166,11 +269,40 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       )
       .subscribe();
 
+    // Realtime: join requests
+    const reqChannel = supabase
+      .channel(`join_requests:${room.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "live_join_requests", filter: `room_id=eq.${room.id}` },
+        async (payload) => {
+          if (isHost) {
+            // Host: refresh pending requests
+            fetchJoinRequests();
+          } else if (user) {
+            // Viewer: check if own request was updated
+            const row = payload.new as any;
+            if (row?.user_id === user.id) {
+              const status = row.status as "pending" | "accepted" | "rejected";
+              setJoinRequestStatus(status);
+              if (status === "accepted") {
+                toast.success("You've been accepted! Joining video… 🎉");
+                joinVideo();
+              } else if (status === "rejected") {
+                toast.error("Your request was declined");
+              }
+            }
+          }
+        },
+      )
+      .subscribe();
+
     return () => {
       if (!isHost) {
         supabase.from("live_rooms").update({ viewer_count: Math.max(0, viewerCount - 1) }).eq("id", room.id);
       }
-      supabase.removeChannel(channel);
+      supabase.removeChannel(msgChannel);
+      supabase.removeChannel(reqChannel);
     };
   }, [room.id]);
 
@@ -266,31 +398,71 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
               <p className="text-white text-lg font-bold">{hostName}</p>
               <p className="text-white/60 text-sm mt-1">{room.title}</p>
 
-              {/* Loading / Retry states */}
-              {joiningVideo ? (
+              {/* Host: auto-joining */}
+              {isHost && joiningVideo && (
                 <div className="mt-6 flex items-center gap-2 text-white/70">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm font-medium">Connecting to live…</span>
+                  <span className="text-sm font-medium">Starting live…</span>
                 </div>
-              ) : wasDisconnected ? (
+              )}
+
+              {/* Viewer: Join request flow */}
+              {!isHost && (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  {joinRequestStatus === "none" && (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={sendJoinRequest}
+                      className="flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg"
+                    >
+                      <Hand className="h-4 w-4" />
+                      Request to Join
+                    </motion.button>
+                  )}
+                  {joinRequestStatus === "pending" && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full bg-yellow-500/20 border border-yellow-500/40 px-5 py-2.5">
+                        <Clock className="h-4 w-4 text-yellow-400 animate-pulse" />
+                        <span className="text-sm font-medium text-yellow-300">Waiting for host…</span>
+                      </div>
+                      <p className="text-white/40 text-xs">The host will accept or decline your request</p>
+                    </div>
+                  )}
+                  {joinRequestStatus === "rejected" && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full bg-red-500/20 border border-red-500/40 px-5 py-2.5">
+                        <XCircle className="h-4 w-4 text-red-400" />
+                        <span className="text-sm font-medium text-red-300">Request declined</span>
+                      </div>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => { setJoinRequestStatus("none"); }}
+                        className="text-white/50 text-xs underline mt-1"
+                      >
+                        Try again
+                      </motion.button>
+                    </div>
+                  )}
+                  {joinRequestStatus === "accepted" && joiningVideo && (
+                    <div className="flex items-center gap-2 text-white/70">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm font-medium">Joining live…</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Reconnect (both host & viewer) */}
+              {wasDisconnected && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={joinVideo}
-                  className="mt-6 flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white"
+                  className="mt-4 flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Reconnect
                 </motion.button>
-              ) : !videoActive ? (
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={joinVideo}
-                  className="mt-6 flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white"
-                >
-                  <Video className="h-4 w-4" />
-                  Join Video
-                </motion.button>
-              ) : null}
+              )}
             </div>
           </div>
         )}
@@ -339,6 +511,21 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Host: join requests badge */}
+          {isHost && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { setShowRequests(!showRequests); fetchJoinRequests(); }}
+              className="relative flex h-8 w-8 items-center justify-center rounded-full bg-black/40 backdrop-blur-md"
+            >
+              <Hand className="h-4 w-4 text-white" />
+              {joinRequests.length > 0 && (
+                <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-500 flex items-center justify-center">
+                  <span className="text-[9px] font-bold text-white">{joinRequests.length}</span>
+                </div>
+              )}
+            </motion.button>
+          )}
           <div className="flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-md px-2.5 py-1.5">
             <Eye className="h-3.5 w-3.5 text-white/80" />
             <span className="text-xs font-semibold text-white">{viewerCount}</span>
@@ -365,6 +552,64 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           )}
         </div>
       </div>
+
+      {/* Host: Join requests panel */}
+      <AnimatePresence>
+        {showRequests && isHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="relative z-20 mx-4 mt-2 rounded-2xl bg-gray-900/95 backdrop-blur-xl border border-white/10 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+              <span className="text-white text-sm font-semibold">Join Requests</span>
+              <button onClick={() => setShowRequests(false)}>
+                <X className="h-4 w-4 text-white/50" />
+              </button>
+            </div>
+            {joinRequests.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-white/40 text-xs">No pending requests</p>
+              </div>
+            ) : (
+              <div className="max-h-[200px] overflow-y-auto scrollbar-hide">
+                {joinRequests.map((req) => (
+                  <div key={req.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
+                    {req.avatarUrl ? (
+                      <img src={req.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/20" />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                        {req.displayName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{req.displayName}</p>
+                      <p className="text-white/40 text-[10px]">Wants to join</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => handleRequest(req.id, "accepted")}
+                        className="h-8 w-8 rounded-full bg-green-500/80 flex items-center justify-center"
+                      >
+                        <Check className="h-4 w-4 text-white" />
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => handleRequest(req.id, "rejected")}
+                        className="h-8 w-8 rounded-full bg-red-500/80 flex items-center justify-center"
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </motion.button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Spacer */}
       <div className="flex-1 relative z-10" />
@@ -453,7 +698,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         )}
       </div>
 
-      {/* Chat overlay - scrollbar hidden */}
+      {/* Chat overlay */}
       <AnimatePresence>
         {showChat && (
           <motion.div
