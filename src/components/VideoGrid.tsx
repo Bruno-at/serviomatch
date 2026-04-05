@@ -261,7 +261,7 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
