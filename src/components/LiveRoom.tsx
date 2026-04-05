@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Gift, Eye, Heart, Share2, UserPlus, MessageCircle, Video, WifiOff, RefreshCw } from "lucide-react";
+import {
+  X, Send, Gift, Eye, Heart, Share2, UserPlus, MessageCircle,
+  Video, VideoOff, Mic, MicOff, WifiOff, RefreshCw, Loader2, SwitchCamera
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -45,6 +48,9 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   const [wasDisconnected, setWasDisconnected] = useState(false);
   const [liked, setLiked] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [mediaReady, setMediaReady] = useState(false);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const reactionId = useRef(0);
   const isHost = user?.id === room.host_id;
@@ -101,6 +107,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     }
   };
 
+  // Auto-join video for everyone (host + viewer)
   useEffect(() => {
     if (!isHost) {
       supabase
@@ -116,7 +123,8 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       });
     }
 
-    if (isHost) joinVideo();
+    // Auto-join video for both host and viewers
+    joinVideo();
 
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -221,7 +229,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
     }
   };
 
-  // Only show the last 30 messages for performance
   const visibleMessages = messages.slice(-30);
 
   return (
@@ -229,18 +236,25 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       {/* Full-screen video background */}
       <div className="absolute inset-0">
         {videoActive && videoToken && videoUrl ? (
-          <VideoGrid
-            token={videoToken}
-            url={videoUrl}
-            onDisconnect={() => setVideoActive(false)}
-            onDropped={handleVideoDropped}
-            onParticipantLeft={handleParticipantLeft}
-          />
+          <div className="h-full w-full">
+            <VideoGrid
+              token={videoToken}
+              url={videoUrl}
+              hideControls
+              onDisconnect={() => {
+                setVideoActive(false);
+                setMediaReady(false);
+              }}
+              onDropped={handleVideoDropped}
+              onParticipantLeft={handleParticipantLeft}
+              onMediaReady={() => setMediaReady(true)}
+            />
+          </div>
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
-            {hostAvatar ? (
-              <img src={hostAvatar} alt="" className="h-full w-full object-cover opacity-40 blur-sm" />
-            ) : null}
+            {hostAvatar && (
+              <img src={hostAvatar} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 blur-md" />
+            )}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               {hostAvatar ? (
                 <img src={hostAvatar} alt="" className="h-24 w-24 rounded-full object-cover ring-4 ring-pink-500/50 mb-4" />
@@ -251,31 +265,58 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
               )}
               <p className="text-white text-lg font-bold">{hostName}</p>
               <p className="text-white/60 text-sm mt-1">{room.title}</p>
-              {!videoActive && !isHost && (
+
+              {/* Loading / Retry states */}
+              {joiningVideo ? (
+                <div className="mt-6 flex items-center gap-2 text-white/70">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm font-medium">Connecting to live…</span>
+                </div>
+              ) : wasDisconnected ? (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={joinVideo}
-                  disabled={joiningVideo}
                   className="mt-6 flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white"
                 >
-                  {wasDisconnected ? (
-                    joiningVideo ? <RefreshCw className="h-4 w-4 animate-spin" /> : <WifiOff className="h-4 w-4" />
-                  ) : (
-                    <Video className="h-4 w-4" />
-                  )}
-                  {joiningVideo ? "Joining..." : wasDisconnected ? "Reconnect" : "Join Video"}
+                  <RefreshCw className="h-4 w-4" />
+                  Reconnect
                 </motion.button>
-              )}
+              ) : !videoActive ? (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={joinVideo}
+                  className="mt-6 flex items-center gap-2 rounded-full bg-pink-500 px-6 py-2.5 text-sm font-semibold text-white"
+                >
+                  <Video className="h-4 w-4" />
+                  Join Video
+                </motion.button>
+              ) : null}
             </div>
           </div>
         )}
       </div>
 
+      {/* Connection status overlay */}
+      <AnimatePresence>
+        {joiningVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-pink-400" />
+              <span className="text-white text-sm font-semibold">Joining live…</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* === TikTok-style overlay UI === */}
 
       {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-4 pt-3 pb-2 safe-area-top">
-        {/* Host info */}
+      <div className="relative z-10 flex items-center justify-between px-4 pt-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md pl-1 pr-3 py-1">
             {hostAvatar ? (
@@ -290,18 +331,13 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
               <span className="text-white/50 text-[10px] leading-tight">Host</span>
             </div>
           </div>
-          {/* Follow button */}
           {!isHost && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="rounded-full bg-pink-500 px-3 py-1"
-            >
+            <motion.button whileTap={{ scale: 0.9 }} className="rounded-full bg-pink-500 px-3 py-1">
               <UserPlus className="h-3.5 w-3.5 text-white" />
             </motion.button>
           )}
         </div>
 
-        {/* Right: viewer count + close */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-md px-2.5 py-1.5">
             <Eye className="h-3.5 w-3.5 text-white/80" />
@@ -330,10 +366,10 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         </div>
       </div>
 
-      {/* Spacer to push content down */}
+      {/* Spacer */}
       <div className="flex-1 relative z-10" />
 
-      {/* Floating reactions (right side, TikTok style) */}
+      {/* Floating reactions */}
       <div className="absolute right-4 bottom-36 z-20 pointer-events-none w-12">
         <AnimatePresence>
           {floatingReactions.map((r) => (
@@ -351,33 +387,21 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         </AnimatePresence>
       </div>
 
-      {/* Right side action buttons (TikTok style) */}
+      {/* Right side action buttons */}
       <div className="absolute right-3 bottom-36 z-10 flex flex-col items-center gap-4">
-        <motion.button
-          whileTap={{ scale: 0.8 }}
-          onClick={() => setShowChat(!showChat)}
-          className="flex flex-col items-center gap-0.5"
-        >
+        <motion.button whileTap={{ scale: 0.8 }} onClick={() => setShowChat(!showChat)} className="flex flex-col items-center gap-0.5">
           <div className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
             <MessageCircle className="h-5 w-5 text-white" />
           </div>
           <span className="text-white text-[9px]">Chat</span>
         </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.8 }}
-          onClick={() => setShowGifts(!showGifts)}
-          className="flex flex-col items-center gap-0.5"
-        >
+        <motion.button whileTap={{ scale: 0.8 }} onClick={() => setShowGifts(!showGifts)} className="flex flex-col items-center gap-0.5">
           <div className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
             <Gift className="h-5 w-5 text-yellow-400" />
           </div>
           <span className="text-white text-[9px]">Gift</span>
         </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.8 }}
-          onClick={handleLike}
-          className="flex flex-col items-center gap-0.5"
-        >
+        <motion.button whileTap={{ scale: 0.8 }} onClick={handleLike} className="flex flex-col items-center gap-0.5">
           <motion.div
             animate={liked ? { scale: [1, 1.4, 1] } : {}}
             className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center"
@@ -386,21 +410,41 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           </motion.div>
           <span className="text-white text-[9px]">Like</span>
         </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.8 }}
-          className="flex flex-col items-center gap-0.5"
-        >
+        <motion.button whileTap={{ scale: 0.8 }} className="flex flex-col items-center gap-0.5">
           <div className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
             <Share2 className="h-5 w-5 text-white" />
           </div>
           <span className="text-white text-[9px]">Share</span>
         </motion.button>
+
+        {/* Mute/Camera controls */}
+        {videoActive && (
+          <>
+            <motion.button
+              whileTap={{ scale: 0.8 }}
+              onClick={() => setCameraOn(!cameraOn)}
+              className="flex flex-col items-center gap-0.5"
+            >
+              <div className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center ${cameraOn ? "bg-black/40" : "bg-red-500/70"}`}>
+                {cameraOn ? <Video className="h-5 w-5 text-white" /> : <VideoOff className="h-5 w-5 text-white" />}
+              </div>
+              <span className="text-white text-[9px]">{cameraOn ? "Cam" : "Off"}</span>
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.8 }}
+              onClick={() => setMicOn(!micOn)}
+              className="flex flex-col items-center gap-0.5"
+            >
+              <div className={`h-10 w-10 rounded-full backdrop-blur-md flex items-center justify-center ${micOn ? "bg-black/40" : "bg-red-500/70"}`}>
+                {micOn ? <Mic className="h-5 w-5 text-white" /> : <MicOff className="h-5 w-5 text-white" />}
+              </div>
+              <span className="text-white text-[9px]">{micOn ? "Mic" : "Muted"}</span>
+            </motion.button>
+          </>
+        )}
+
         {isHost && (
-          <motion.button
-            whileTap={{ scale: 0.8 }}
-            onClick={handleEndLive}
-            className="flex flex-col items-center gap-0.5"
-          >
+          <motion.button whileTap={{ scale: 0.8 }} onClick={handleEndLive} className="flex flex-col items-center gap-0.5">
             <div className="h-10 w-10 rounded-full bg-red-500/80 backdrop-blur-md flex items-center justify-center">
               <X className="h-5 w-5 text-white" />
             </div>
@@ -409,7 +453,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         )}
       </div>
 
-      {/* Chat overlay (bottom-left, TikTok style) */}
+      {/* Chat overlay - scrollbar hidden */}
       <AnimatePresence>
         {showChat && (
           <motion.div
@@ -418,7 +462,6 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
             exit={{ opacity: 0, x: -20 }}
             className="relative z-10 px-3 mb-2 max-h-[35%] overflow-hidden"
           >
-            {/* Gradient fade at top */}
             <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/30 to-transparent pointer-events-none z-10" />
             <div className="overflow-y-auto max-h-[35vh] scrollbar-hide pr-16">
               {visibleMessages.length === 0 ? (
@@ -429,12 +472,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                     const { message: msg, senderName } = item;
                     if (msg.message_type === "join") {
                       return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center gap-1"
-                        >
+                        <motion.div key={msg.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-1">
                           <span className="text-[11px] rounded-full bg-white/10 backdrop-blur-sm px-2 py-0.5 text-white/60">
                             <span className="text-cyan-400 font-medium">{senderName}</span> {msg.content}
                           </span>
@@ -443,14 +481,9 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                     }
                     if (msg.message_type === "gift") {
                       return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="flex items-center gap-1.5"
-                        >
+                        <motion.div key={msg.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-1.5">
                           <span className="rounded-full bg-gradient-to-r from-yellow-500/20 to-pink-500/20 backdrop-blur-sm px-2.5 py-1 text-[11px] text-white">
-                            <span className="text-yellow-300 font-semibold">{senderName}</span> sent {" "}
+                            <span className="text-yellow-300 font-semibold">{senderName}</span> sent{" "}
                             <span className="text-lg leading-none">{msg.content}</span>
                           </span>
                         </motion.div>
@@ -458,12 +491,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                     }
                     if (msg.message_type === "system") {
                       return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="flex items-center gap-1"
-                        >
+                        <motion.div key={msg.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1">
                           <span className="text-[11px] rounded-full bg-red-500/20 backdrop-blur-sm px-2 py-0.5 text-red-300">
                             ⚠ {msg.content}
                           </span>
@@ -471,12 +499,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
                       );
                     }
                     return (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-start gap-1"
-                      >
+                      <motion.div key={msg.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-start gap-1">
                         <span className="text-[11px] rounded-2xl bg-white/10 backdrop-blur-sm px-2.5 py-1 text-white/90 max-w-[70vw]">
                           <span className="text-cyan-400 font-semibold">{senderName}</span>{" "}
                           {msg.content}
@@ -492,7 +515,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         )}
       </AnimatePresence>
 
-      {/* Gift picker (TikTok style bottom sheet) */}
+      {/* Gift picker */}
       <AnimatePresence>
         {showGifts && (
           <motion.div
@@ -529,8 +552,8 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         )}
       </AnimatePresence>
 
-      {/* Bottom input bar (TikTok style) */}
-      <div className="relative z-10 flex items-center gap-2 px-3 pb-3 pt-1 safe-area-bottom">
+      {/* Bottom input bar */}
+      <div className="relative z-10 flex items-center gap-2 px-3 pb-3 pt-1">
         <div className="flex-1 flex items-center rounded-full bg-white/10 backdrop-blur-md border border-white/10 px-4 py-2">
           <input
             value={newMessage}

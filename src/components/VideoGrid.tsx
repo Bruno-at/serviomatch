@@ -26,6 +26,8 @@ interface VideoGridProps {
   onDisconnect: () => void;
   onDropped?: () => void;
   onParticipantLeft?: (participantName: string) => void;
+  hideControls?: boolean;
+  onMediaReady?: () => void;
 }
 
 interface ParticipantTile {
@@ -259,7 +261,7 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
@@ -293,6 +295,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: V
       setConnected(true);
       setIsReconnecting(false);
       updateParticipants();
+      onMediaReady?.();
     });
 
     room.on(RoomEvent.Reconnecting, () => {
@@ -411,11 +414,13 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: V
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Participant count overlay */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-1">
-        <Users className="h-3.5 w-3.5 text-primary-foreground" />
-        <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
-      </div>
+      {/* Participant count overlay - hidden in hideControls mode */}
+      {!hideControls && (
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-1">
+          <Users className="h-3.5 w-3.5 text-primary-foreground" />
+          <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
+        </div>
+      )}
 
       {/* Reconnecting overlay */}
       <AnimatePresence>
@@ -435,13 +440,10 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: V
       </AnimatePresence>
 
       {isPiP ? (
-        /* PiP layout: screen share main + camera thumbnails */
         <div className="flex-1 flex flex-col overflow-hidden p-2 gap-2">
-          {/* Main screen share */}
           <div className="flex-1 min-h-0">
             <ScreenShareTile participant={screenSharer!.participant} isLocal={screenSharer!.isLocal} />
           </div>
-          {/* Camera thumbnails */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {participants.map((tile) => (
               <motion.div
@@ -456,8 +458,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: V
           </div>
         </div>
       ) : (
-        /* Standard grid layout */
-        <div className={`flex-1 overflow-y-auto p-2 grid ${gridCols} gap-2 auto-rows-min`}>
+        <div className={`flex-1 overflow-y-auto ${hideControls ? "" : "p-2"} grid ${gridCols} gap-2 auto-rows-min`}>
           <AnimatePresence>
             {participants.map((tile) => (
               <motion.div
@@ -465,57 +466,60 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft }: V
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
+                className={hideControls ? "h-full" : ""}
               >
-                <VideoTile participant={tile.participant} isLocal={tile.isLocal} latencyMs={latencyMs} />
+                <VideoTile participant={tile.participant} isLocal={tile.isLocal} latencyMs={latencyMs} compact={hideControls} />
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4 py-3 px-4 border-t border-border bg-card">
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={toggleCamera}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${cameraOn ? "bg-muted" : "bg-destructive"}`}
-        >
-          {cameraOn ? (
-            <Video className="h-5 w-5 text-foreground" />
-          ) : (
-            <VideoOff className="h-5 w-5 text-primary-foreground" />
-          )}
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={toggleMic}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${micOn ? "bg-muted" : "bg-destructive"}`}
-        >
-          {micOn ? (
-            <Mic className="h-5 w-5 text-foreground" />
-          ) : (
-            <MicOff className="h-5 w-5 text-primary-foreground" />
-          )}
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={toggleScreenShare}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${screenSharing ? "bg-primary" : "bg-muted"}`}
-        >
-          {screenSharing ? (
-            <ScreenShareOff className="h-5 w-5 text-primary-foreground" />
-          ) : (
-            <ScreenShare className="h-5 w-5 text-foreground" />
-          )}
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={handleDisconnect}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive"
-        >
-          <PhoneOff className="h-5 w-5 text-primary-foreground" />
-        </motion.button>
-      </div>
+      {/* Controls - hidden when hideControls is true */}
+      {!hideControls && (
+        <div className="flex items-center justify-center gap-4 py-3 px-4 border-t border-border bg-card">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleCamera}
+            className={`flex h-11 w-11 items-center justify-center rounded-full ${cameraOn ? "bg-muted" : "bg-destructive"}`}
+          >
+            {cameraOn ? (
+              <Video className="h-5 w-5 text-foreground" />
+            ) : (
+              <VideoOff className="h-5 w-5 text-primary-foreground" />
+            )}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleMic}
+            className={`flex h-11 w-11 items-center justify-center rounded-full ${micOn ? "bg-muted" : "bg-destructive"}`}
+          >
+            {micOn ? (
+              <Mic className="h-5 w-5 text-foreground" />
+            ) : (
+              <MicOff className="h-5 w-5 text-primary-foreground" />
+            )}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleScreenShare}
+            className={`flex h-11 w-11 items-center justify-center rounded-full ${screenSharing ? "bg-primary" : "bg-muted"}`}
+          >
+            {screenSharing ? (
+              <ScreenShareOff className="h-5 w-5 text-primary-foreground" />
+            ) : (
+              <ScreenShare className="h-5 w-5 text-foreground" />
+            )}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleDisconnect}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive"
+          >
+            <PhoneOff className="h-5 w-5 text-primary-foreground" />
+          </motion.button>
+        </div>
+      )}
     </div>
   );
 };
