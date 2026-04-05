@@ -295,6 +295,7 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hid
       setConnected(true);
       setIsReconnecting(false);
       updateParticipants();
+      onMediaReady?.();
     });
 
     room.on(RoomEvent.Reconnecting, () => {
