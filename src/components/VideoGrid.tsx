@@ -26,6 +26,8 @@ interface VideoGridProps {
   onDisconnect: () => void;
   onDropped?: () => void;
   onParticipantLeft?: (participantName: string) => void;
+  hideControls?: boolean;
+  onMediaReady?: () => void;
 }
 
 interface ParticipantTile {
