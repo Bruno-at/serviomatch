@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Send } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Send, Check, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import VirtualGifts from "./VirtualGifts";
@@ -20,6 +20,9 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [giftEmoji, setGiftEmoji] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +50,22 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [matchId]);
 
+  // Typing indicator channel
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`typing:${matchId}`)
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.user_id !== user.id) {
+          setOtherTyping(true);
+          setTimeout(() => setOtherTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [matchId, user]);
+
   // Listen for gift animations
   useEffect(() => {
     if (!user) return;
@@ -69,7 +88,26 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, otherTyping]);
+
+  const broadcastTyping = () => {
+    if (!user) return;
+    supabase.channel(`typing:${matchId}`).send({
+      type: "broadcast",
+      event: "typing",
+      payload: { user_id: user.id },
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    if (!isTyping) {
+      setIsTyping(true);
+      broadcastTyping();
+    }
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    typingTimeout.current = setTimeout(() => setIsTyping(false), 2000);
+  };
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || sending) return;
@@ -90,6 +128,10 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
     }
   };
 
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
     <div className="flex h-full flex-col">
       <GiftAnimation emoji={giftEmoji} onComplete={() => setGiftEmoji(null)} />
@@ -101,13 +143,29 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
         </button>
         <div className="flex items-center gap-3 flex-1">
           {otherUserProfile.avatar_url ? (
-            <img src={otherUserProfile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+            <div className="relative">
+              <img src={otherUserProfile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+              {otherUserProfile.is_online && (
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-card" />
+              )}
+            </div>
           ) : (
             <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-love text-sm font-bold text-primary-foreground">
               {otherUserProfile.display_name.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="font-semibold text-sm text-foreground">{otherUserProfile.display_name}</span>
+          <div>
+            <span className="font-semibold text-sm text-foreground">{otherUserProfile.display_name}</span>
+            <p className="text-[10px] text-muted-foreground">
+              {otherTyping ? (
+                <span className="text-primary font-medium">Typing...</span>
+              ) : otherUserProfile.is_online ? (
+                <span className="text-green-500">Online</span>
+              ) : (
+                "Offline"
+              )}
+            </p>
+          </div>
         </div>
         <VirtualGifts
           receiverId={otherUserProfile.user_id}
@@ -117,7 +175,7 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 scrollbar-hide">
         {messages.length === 0 && (
           <>
             <p className="text-center text-sm text-muted-foreground mt-6 mb-3">
@@ -130,8 +188,9 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
             />
           </>
         )}
-        {messages.map((msg) => {
+        {messages.map((msg, idx) => {
           const isMine = msg.sender_id === user?.id;
+          const isLast = idx === messages.length - 1;
           return (
             <motion.div
               key={msg.id}
@@ -139,18 +198,45 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${isMine ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
-                  isMine
-                    ? "gradient-love text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}
-              >
-                {msg.content}
+              <div className="flex flex-col">
+                <div
+                  className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
+                    isMine
+                      ? "gradient-love text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  {msg.content}
+                </div>
+                <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : "justify-start"}`}>
+                  <span className="text-[9px] text-muted-foreground">{formatTime(msg.created_at)}</span>
+                  {isMine && isLast && (
+                    <CheckCheck className="h-3 w-3 text-primary" />
+                  )}
+                </div>
               </div>
             </motion.div>
           );
         })}
+
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {otherTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="flex justify-start"
+            >
+              <div className="bg-muted rounded-2xl px-4 py-2 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div ref={bottomRef} />
       </div>
 
@@ -158,7 +244,7 @@ const ChatView = ({ matchId, otherUserProfile, onBack }: ChatViewProps) => {
       <div className="border-t border-border p-3 flex gap-2">
         <input
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           className="flex-1 rounded-xl bg-muted py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30"
