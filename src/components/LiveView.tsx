@@ -88,7 +88,7 @@ const LiveView = () => {
       .from("profiles")
       .select("display_name, avatar_url")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     setSelectedRoom({
       room: data,
