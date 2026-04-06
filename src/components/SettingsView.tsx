@@ -43,9 +43,14 @@ const SettingsView = ({ onBack }: SettingsViewProps) => {
     localStorage.setItem(storageKey, JSON.stringify(current));
   };
 
-  const toggle = (key: string, value: boolean, setter: (v: boolean) => void) => {
+  const toggle = async (key: string, value: boolean, setter: (v: boolean) => void) => {
     setter(value);
     persist(key, value);
+    // Sync privacy settings to DB
+    if (key === "showOnlineStatus" && user) {
+      await supabase.from("profiles").update({ is_online: value } as any).eq("user_id", user.id);
+    }
+    toast.success("Setting updated");
   };
 
   const handleDeleteAccount = async () => {
