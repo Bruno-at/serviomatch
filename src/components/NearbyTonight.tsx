@@ -43,7 +43,7 @@ const NearbyTonight = ({ onNavigateToChat }: NearbyTonightProps) => {
       .from("profiles")
       .select("available_tonight, latitude, longitude")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setAvailable(!!(data as any).available_tonight);

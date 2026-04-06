@@ -34,7 +34,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return;
     const checkOnboarding = async () => {
-      const { data } = await supabase.from("profiles").select("photos, avatar_url").eq("user_id", user.id).single();
+      const { data } = await supabase.from("profiles").select("photos, avatar_url").eq("user_id", user.id).maybeSingle();
       const hasPhotos = data?.photos && (data.photos as string[]).length > 0;
       const hasAvatar = !!data?.avatar_url;
       setNeedsOnboarding(!hasPhotos && !hasAvatar);

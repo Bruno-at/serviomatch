@@ -318,9 +318,9 @@ const MatchesView = () => {
                   className="flex items-center gap-1 rounded-xl gradient-love px-3 py-1.5 text-xs font-semibold text-primary-foreground flex-1 justify-center">
                   <MessageCircle className="h-3.5 w-3.5" />{!match.lastMessage ? "Break the Ice" : "Message"}
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => toast("📞 Audio calling coming soon!")}
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setSelectedChat({ matchId: match.matchId, profile: match.profile }); toast.success("Opening voice chat..."); }}
                   className="flex items-center justify-center rounded-xl bg-muted h-8 w-8"><Phone className="h-3.5 w-3.5 text-muted-foreground" /></motion.button>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => toast("📹 Video calling coming soon!")}
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setSelectedChat({ matchId: match.matchId, profile: match.profile }); toast.success("Opening video chat..."); }}
                   className="flex items-center justify-center rounded-xl bg-muted h-8 w-8"><Video className="h-3.5 w-3.5 text-muted-foreground" /></motion.button>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleFavorite(match.profile.user_id)}
                   className={`flex items-center justify-center rounded-xl h-8 w-8 ${favoriteIds.has(match.profile.user_id) ? "bg-yellow-500/15" : "bg-muted"}`}>

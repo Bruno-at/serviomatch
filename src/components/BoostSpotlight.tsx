@@ -22,7 +22,7 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
     const fetchStatus = async () => {
       const [{ data: coinData }, { data: profile }] = await Promise.all([
         supabase.from("user_coins").select("balance").eq("user_id", user.id).maybeSingle(),
-        supabase.from("profiles").select("is_boosted, boost_expires_at, is_spotlight, spotlight_expires_at").eq("user_id", user.id).single(),
+        supabase.from("profiles").select("is_boosted, boost_expires_at, is_spotlight, spotlight_expires_at").eq("user_id", user.id).maybeSingle(),
       ]);
 
       if (coinData) setBalance(coinData.balance);

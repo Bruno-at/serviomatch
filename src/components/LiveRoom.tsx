@@ -77,7 +77,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
       .from("profiles")
       .select("display_name, avatar_url")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
     const profile = { name: data?.display_name || "User", avatar: data?.avatar_url || null };
     profileCache.current.set(userId, profile);
     return profile;
