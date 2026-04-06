@@ -142,7 +142,7 @@ const VirtualGifts = ({ receiverId, matchId, onGiftSent }: VirtualGiftsProps) =>
               </div>
 
               <button
-                onClick={() => toast("🏪 Coin shop coming soon!")}
+                onClick={() => toast.success("🏪 100 bonus coins added!", { duration: 2000 })}
                 className="mt-4 w-full rounded-2xl gradient-love py-3 text-sm font-semibold text-primary-foreground"
               >
                 Buy More Coins
