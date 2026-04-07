@@ -93,6 +93,8 @@ const Index = () => {
     if (showVisitors) return <ProfileVisitorsView />;
     if (showLive) return <LiveView />;
     if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
+    if (showReferrals) return <ReferralSystem onBack={() => setShowReferrals(false)} />;
+    if (showVIP) return <VIPSubscription onBack={() => setShowVIP(false)} />;
 
     return (
       <>
