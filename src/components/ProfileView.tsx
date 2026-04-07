@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
+import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Share2, Users, Gift, Crown, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -10,9 +10,17 @@ import VoiceIntroPlayer from "./VoiceIntroPlayer";
 import ProfileVideoPlayer from "./ProfileVideoPlayer";
 import VerificationFlow from "./VerificationFlow";
 import BoostSpotlight from "./BoostSpotlight";
+import SocialShare from "./SocialShare";
 import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
 
-const ProfileView = () => {
+interface ProfileViewProps {
+  onShowReferrals?: () => void;
+  onShowVIP?: () => void;
+  onShowDailyRewards?: () => void;
+  onShowNotifications?: () => void;
+}
+
+const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNotifications }: ProfileViewProps) => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [editing, setEditing] = useState(false);
@@ -69,6 +77,26 @@ const ProfileView = () => {
       {/* Boost & Spotlight */}
       <div className="w-full mb-4">
         <BoostSpotlight compact />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="w-full grid grid-cols-4 gap-2 mb-4">
+        <button onClick={onShowReferrals} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Users className="h-5 w-5 text-primary" />
+          <span className="text-[9px] font-medium text-muted-foreground">Invite</span>
+        </button>
+        <button onClick={onShowVIP} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Crown className="h-5 w-5 text-yellow-500" />
+          <span className="text-[9px] font-medium text-muted-foreground">VIP</span>
+        </button>
+        <button onClick={onShowDailyRewards} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Gift className="h-5 w-5 text-accent" />
+          <span className="text-[9px] font-medium text-muted-foreground">Rewards</span>
+        </button>
+        <button onClick={onShowNotifications} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Bell className="h-5 w-5 text-orange-500" />
+          <span className="text-[9px] font-medium text-muted-foreground">Alerts</span>
+        </button>
       </div>
 
       {/* Photo carousel */}

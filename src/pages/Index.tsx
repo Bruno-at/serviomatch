@@ -16,6 +16,10 @@ import SpeedDating from "@/components/SpeedDating";
 import ChallengesView from "@/components/ChallengesView";
 import LiveView from "@/components/LiveView";
 import SecretCrushView from "@/components/SecretCrushView";
+import ReferralSystem from "@/components/ReferralSystem";
+import DailyRewards from "@/components/DailyRewards";
+import VIPSubscription from "@/components/VIPSubscription";
+import NotificationsView from "@/components/NotificationsView";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -28,8 +32,23 @@ const Index = () => {
   const [showChallenges, setShowChallenges] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showCrush, setShowCrush] = useState(false);
+  const [showReferrals, setShowReferrals] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+  const [showVIP, setShowVIP] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+
+  // Auto-show daily rewards on first load
+  useEffect(() => {
+    if (!user) return;
+    const lastShown = localStorage.getItem("daily_rewards_shown");
+    const today = new Date().toISOString().split("T")[0];
+    if (lastShown !== today) {
+      setTimeout(() => setShowDailyRewards(true), 1500);
+      localStorage.setItem("daily_rewards_shown", today);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +80,8 @@ const Index = () => {
     setShowVisitors(false);
     setShowLive(false);
     setShowCrush(false);
+    setShowReferrals(false);
+    setShowVIP(false);
     setActiveTab(tab);
   };
 
@@ -72,6 +93,8 @@ const Index = () => {
     if (showVisitors) return <ProfileVisitorsView />;
     if (showLive) return <LiveView />;
     if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
+    if (showReferrals) return <ReferralSystem onBack={() => setShowReferrals(false)} />;
+    if (showVIP) return <VIPSubscription onBack={() => setShowVIP(false)} />;
 
     return (
       <>
@@ -82,7 +105,14 @@ const Index = () => {
         {activeTab === "nearby" && <NearbyView />}
         {activeTab === "matches" && <MatchesView />}
         {activeTab === "messages" && <MessagesView />}
-        {activeTab === "profile" && <ProfileView />}
+        {activeTab === "profile" && (
+          <ProfileView
+            onShowReferrals={() => setShowReferrals(true)}
+            onShowVIP={() => setShowVIP(true)}
+            onShowDailyRewards={() => setShowDailyRewards(true)}
+            onShowNotifications={() => setShowNotifications(true)}
+          />
+        )}
       </>
     );
   };
@@ -90,6 +120,8 @@ const Index = () => {
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
       {renderContent()}
+      <DailyRewards open={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
+      <NotificationsView open={showNotifications} onClose={() => setShowNotifications(false)} />
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
