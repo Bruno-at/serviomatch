@@ -105,7 +105,14 @@ const Index = () => {
         {activeTab === "nearby" && <NearbyView />}
         {activeTab === "matches" && <MatchesView />}
         {activeTab === "messages" && <MessagesView />}
-        {activeTab === "profile" && <ProfileView />}
+        {activeTab === "profile" && (
+          <ProfileView
+            onShowReferrals={() => setShowReferrals(true)}
+            onShowVIP={() => setShowVIP(true)}
+            onShowDailyRewards={() => setShowDailyRewards(true)}
+            onShowNotifications={() => setShowNotifications(true)}
+          />
+        )}
       </>
     );
   };
