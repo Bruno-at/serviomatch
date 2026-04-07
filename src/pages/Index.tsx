@@ -32,8 +32,23 @@ const Index = () => {
   const [showChallenges, setShowChallenges] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showCrush, setShowCrush] = useState(false);
+  const [showReferrals, setShowReferrals] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+  const [showVIP, setShowVIP] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+
+  // Auto-show daily rewards on first load
+  useEffect(() => {
+    if (!user) return;
+    const lastShown = localStorage.getItem("daily_rewards_shown");
+    const today = new Date().toISOString().split("T")[0];
+    if (lastShown !== today) {
+      setTimeout(() => setShowDailyRewards(true), 1500);
+      localStorage.setItem("daily_rewards_shown", today);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
