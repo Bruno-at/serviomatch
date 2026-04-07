@@ -79,6 +79,26 @@ const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNot
         <BoostSpotlight compact />
       </div>
 
+      {/* Quick Actions */}
+      <div className="w-full grid grid-cols-4 gap-2 mb-4">
+        <button onClick={onShowReferrals} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Users className="h-5 w-5 text-primary" />
+          <span className="text-[9px] font-medium text-muted-foreground">Invite</span>
+        </button>
+        <button onClick={onShowVIP} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Crown className="h-5 w-5 text-yellow-500" />
+          <span className="text-[9px] font-medium text-muted-foreground">VIP</span>
+        </button>
+        <button onClick={onShowDailyRewards} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Gift className="h-5 w-5 text-accent" />
+          <span className="text-[9px] font-medium text-muted-foreground">Rewards</span>
+        </button>
+        <button onClick={onShowNotifications} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
+          <Bell className="h-5 w-5 text-orange-500" />
+          <span className="text-[9px] font-medium text-muted-foreground">Alerts</span>
+        </button>
+      </div>
+
       {/* Photo carousel */}
       <div className="relative mb-4 w-full max-w-[200px]">
         {allImages.length > 0 ? (
