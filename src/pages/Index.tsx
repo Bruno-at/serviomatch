@@ -113,6 +113,8 @@ const Index = () => {
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col bg-background overflow-y-auto pb-20">
       {renderContent()}
+      <DailyRewards open={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
+      <NotificationsView open={showNotifications} onClose={() => setShowNotifications(false)} />
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
