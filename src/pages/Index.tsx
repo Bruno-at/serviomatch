@@ -80,6 +80,8 @@ const Index = () => {
     setShowVisitors(false);
     setShowLive(false);
     setShowCrush(false);
+    setShowReferrals(false);
+    setShowVIP(false);
     setActiveTab(tab);
   };
 
