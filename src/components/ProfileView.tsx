@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
+import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Share2, Users, Gift, Crown, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -10,9 +10,17 @@ import VoiceIntroPlayer from "./VoiceIntroPlayer";
 import ProfileVideoPlayer from "./ProfileVideoPlayer";
 import VerificationFlow from "./VerificationFlow";
 import BoostSpotlight from "./BoostSpotlight";
+import SocialShare from "./SocialShare";
 import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
 
-const ProfileView = () => {
+interface ProfileViewProps {
+  onShowReferrals?: () => void;
+  onShowVIP?: () => void;
+  onShowDailyRewards?: () => void;
+  onShowNotifications?: () => void;
+}
+
+const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNotifications }: ProfileViewProps) => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [editing, setEditing] = useState(false);
