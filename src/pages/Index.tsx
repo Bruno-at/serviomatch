@@ -16,6 +16,10 @@ import SpeedDating from "@/components/SpeedDating";
 import ChallengesView from "@/components/ChallengesView";
 import LiveView from "@/components/LiveView";
 import SecretCrushView from "@/components/SecretCrushView";
+import ReferralSystem from "@/components/ReferralSystem";
+import DailyRewards from "@/components/DailyRewards";
+import VIPSubscription from "@/components/VIPSubscription";
+import NotificationsView from "@/components/NotificationsView";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
