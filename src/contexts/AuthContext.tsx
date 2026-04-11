@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 // ⚡ DEVELOPMENT MODE FLAG — set to false to restore full auth
-const isDevelopmentMode = true;
+const isDevelopmentMode = false;
 
 const MOCK_USER = {
   id: "dev-user-00000-00000-00000",
