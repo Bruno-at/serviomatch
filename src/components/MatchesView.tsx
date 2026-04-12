@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import ChatView from "./ChatView";
+import CallView from "./CallView";
 import ReportDialog from "./ReportDialog";
 import MatchStreak from "./MatchStreak";
 import MatchExpirationTimer from "./MatchExpirationTimer";
