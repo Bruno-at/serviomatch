@@ -1,6 +1,6 @@
-import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio, Lock } from "lucide-react";
-import { motion } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { Heart, MessageCircle, User, Flame, MapPin, Users, Zap, Trophy, Radio, Lock, Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 interface BottomNavProps {
   active: string;
@@ -11,66 +11,119 @@ interface BottomNavProps {
   onCrush?: () => void;
 }
 
-const tabs = [
+const coreTabs = [
   { id: "discover", icon: Flame, label: "Discover" },
-  { id: "nearby", icon: MapPin, label: "Nearby" },
-  { id: "live", icon: Radio, label: "Live" },
-  { id: "speed", icon: Zap, label: "Speed" },
-  { id: "crush", icon: Lock, label: "Crush" },
   { id: "matches", icon: Users, label: "Matches" },
-  { id: "challenges", icon: Trophy, label: "Ranks" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
+  { id: "nearby", icon: MapPin, label: "Nearby" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
+const moreTabs = [
+  { id: "live", icon: Radio, label: "Go Live", color: "text-red-500" },
+  { id: "speed", icon: Zap, label: "Speed Dating", color: "text-yellow-500" },
+  { id: "crush", icon: Lock, label: "Secret Crush", color: "text-pink-500" },
+  { id: "challenges", icon: Trophy, label: "Ranks & Challenges", color: "text-amber-500" },
+];
+
 const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush }: BottomNavProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const handleMoreAction = (id: string) => {
+    setMoreOpen(false);
+    if (id === "speed" && onSpeedDating) onSpeedDating();
+    else if (id === "challenges" && onChallenges) onChallenges();
+    else if (id === "live" && onLive) onLive();
+    else if (id === "crush" && onCrush) onCrush();
+  };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/90 backdrop-blur-xl">
-      <div
-        ref={scrollRef}
-        className="mx-auto max-w-md flex items-center gap-1 py-2 px-2 overflow-x-auto scrollbar-hide"
-      >
-        {tabs.map((tab) => {
-          const isActive = active === tab.id;
-          const isSpecial = tab.id === "speed" || tab.id === "challenges" || tab.id === "live" || tab.id === "crush";
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === "speed" && onSpeedDating) onSpeedDating();
-                else if (tab.id === "challenges" && onChallenges) onChallenges();
-                else if (tab.id === "live" && onLive) onLive();
-                else if (tab.id === "crush" && onCrush) onCrush();
-                else if (!isSpecial) onNavigate(tab.id);
-              }}
-              className="relative flex flex-col items-center gap-0.5 px-2 py-1 shrink-0 min-w-[44px]"
+    <>
+      {/* More menu overlay */}
+      <AnimatePresence>
+        {moreOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+              onClick={() => setMoreOpen(false)}
+            />
+            <motion.div
+              initial={{ y: 200, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 200, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="fixed bottom-16 left-0 right-0 z-[70] mx-auto max-w-md px-4 pb-2"
             >
-              {isActive && !isSpecial && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute -top-2 h-0.5 w-8 rounded-full gradient-love"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              <tab.icon
-                className={`h-4 w-4 transition-colors ${
-                  isSpecial ? "text-accent" : isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              />
-              <span
-                className={`text-[9px] font-medium transition-colors ${
-                  isSpecial ? "text-accent" : isActive ? "text-primary" : "text-muted-foreground"
-                }`}
+              <div className="rounded-2xl bg-card border border-border shadow-xl overflow-hidden">
+                {moreTabs.map((tab, i) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleMoreAction(tab.id)}
+                    className={`flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-muted/50 ${
+                      i < moreTabs.length - 1 ? "border-b border-border/50" : ""
+                    }`}
+                  >
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-muted ${tab.color}`}>
+                      <tab.icon className="h-4.5 w-4.5" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom nav bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-xl">
+        <div className="mx-auto max-w-md flex items-center justify-around py-1.5 px-2">
+          {coreTabs.map((tab) => {
+            const isActive = active === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setMoreOpen(false); onNavigate(tab.id); }}
+                className="relative flex flex-col items-center gap-0.5 px-3 py-1"
               >
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-indicator"
+                    className="absolute -top-1.5 h-0.5 w-8 rounded-full gradient-love"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <tab.icon
+                  className={`h-5 w-5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                />
+                <span
+                  className={`text-[10px] font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+          {/* More button */}
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            className="relative flex flex-col items-center gap-0.5 px-3 py-1"
+          >
+            {moreOpen ? (
+              <X className="h-5 w-5 text-primary transition-colors" />
+            ) : (
+              <Menu className="h-5 w-5 text-muted-foreground transition-colors" />
+            )}
+            <span className={`text-[10px] font-medium transition-colors ${moreOpen ? "text-primary" : "text-muted-foreground"}`}>
+              More
+            </span>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 };
 

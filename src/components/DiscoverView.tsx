@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, Star, Bookmark, Zap, Undo2 } from "lucide-react";
+import { Sparkles, Star, Bookmark, Undo2, SlidersHorizontal, X } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
 import MatchPopup from "./MatchPopup";
-import AIRecommendations from "./AIRecommendations";
 import BoostSpotlight from "./BoostSpotlight";
-import NearbyTonight from "./NearbyTonight";
 import SpotlightProfiles from "./SpotlightProfiles";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +19,18 @@ interface DiscoverViewProps {
   onNavigateToChat?: (matchId: string, profile: Tables<"profiles">) => void;
 }
 
+type DiscoverFilter = "all" | "1km" | "5km" | "10km" | "trending" | "new" | "spotlight";
+
+const filterOptions: { key: DiscoverFilter; label: string }[] = [
+  { key: "all", label: "For You" },
+  { key: "1km", label: "1 km" },
+  { key: "5km", label: "5 km" },
+  { key: "10km", label: "10 km" },
+  { key: "trending", label: "🔥 Trending" },
+  { key: "new", label: "🆕 New" },
+  { key: "spotlight", label: "🌟 Spotlight" },
+];
+
 const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: DiscoverViewProps) => {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
@@ -32,11 +42,14 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
   const [lastSwiped, setLastSwiped] = useState<{ profile: Tables<"profiles">; direction: string } | null>(null);
   const [undoCount, setUndoCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<DiscoverFilter>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const MAX_FREE_UNDOS = 3;
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      setLoading(true);
       const { data: myData } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
       setMyProfile(myData);
 
@@ -47,14 +60,23 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
       const excludeIds = [user.id, ...(likedData?.map((l) => l.liked_id) || []), ...(blockedData?.map((b: any) => b.blocked_id) || [])];
 
-      const { data } = await supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(20);
+      let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(20);
 
-      // Sort: boosted first, then by shared interests
+      // Apply filter-specific queries
+      if (activeFilter === "trending") {
+        query = query.or("is_boosted.eq.true,is_spotlight.eq.true");
+      } else if (activeFilter === "new") {
+        query = query.order("created_at", { ascending: false });
+      } else if (activeFilter === "spotlight") {
+        query = query.eq("is_spotlight", true);
+      }
+
+      const { data } = await query;
+
       const sorted = (data || []).sort((a, b) => {
         const aBoosted = a.is_boosted && a.boost_expires_at && new Date(a.boost_expires_at) > new Date() ? 1 : 0;
         const bBoosted = b.is_boosted && b.boost_expires_at && new Date(b.boost_expires_at) > new Date() ? 1 : 0;
         if (bBoosted !== aBoosted) return bBoosted - aBoosted;
-        // AI sort by compatibility
         if (myData) {
           const aCompat = computeCompatibility(
             { interests: myData.interests, personality_answers: (myData.personality_answers || {}) as PersonalityAnswers },
@@ -70,10 +92,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       });
 
       setProfiles(sorted);
+      setCurrentIndex(0);
       setLoading(false);
     };
     fetchData();
-  }, [user]);
+  }, [user, activeFilter]);
 
   const currentProfile = profiles[currentIndex];
 
@@ -87,19 +110,13 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   const handleSwipe = useCallback(async (direction: "left" | "right") => {
     if (!user || !currentProfile) return;
-
-    // Record swipe history
-    await supabase.from("swipe_history").insert({
-      user_id: user.id, swiped_id: currentProfile.user_id, direction
-    });
-
+    await supabase.from("swipe_history").insert({ user_id: user.id, swiped_id: currentProfile.user_id, direction });
     setLastSwiped({ profile: currentProfile, direction });
 
     if (direction === "right") {
       await supabase.from("likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
       const { data: mutual } = await supabase.from("likes").select("id")
         .eq("liker_id", currentProfile.user_id).eq("liked_id", user.id).maybeSingle();
-
       if (mutual) {
         const [u1, u2] = [user.id, currentProfile.user_id].sort();
         const { data: matchData } = await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 }).select().single();
@@ -129,7 +146,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       toast.error("Free undos used up! Upgrade to Premium for unlimited undos ✨");
       return;
     }
-    // Remove the like/super_like
     await supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", lastSwiped.profile.user_id);
     await supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", lastSwiped.profile.user_id);
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -195,21 +211,14 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   const handleSecretCrush = useCallback(async () => {
     if (!user || !currentProfile) return;
-    const { error } = await supabase
-      .from("secret_crushes")
-      .insert({ crusher_id: user.id, crushed_id: currentProfile.user_id });
+    const { error } = await supabase.from("secret_crushes").insert({ crusher_id: user.id, crushed_id: currentProfile.user_id });
     if (error) {
       if (error.code === "23505") toast.info("Already in your crush list 💖");
       else toast.error("Failed to add secret crush");
       return;
     }
-    // Check mutual
-    const { data: reverse } = await supabase
-      .from("secret_crushes")
-      .select("id")
-      .eq("crusher_id", currentProfile.user_id)
-      .eq("crushed_id", user.id)
-      .maybeSingle();
+    const { data: reverse } = await supabase.from("secret_crushes").select("id")
+      .eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id).maybeSingle();
     if (reverse) {
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", user.id).eq("crushed_id", currentProfile.user_id);
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id);
@@ -225,47 +234,61 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-6 pt-4 pb-2">
-        <h1 className="text-2xl font-bold font-display text-foreground">Spark<span className="text-primary">.</span></h1>
-        <div className="flex items-center gap-2">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-1">
+        <h1 className="text-2xl font-bold font-display text-foreground">
+          Spark<span className="text-primary">.</span>
+        </h1>
+        <div className="flex items-center gap-1.5">
           {lastSwiped && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={handleUndo}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9">
-              <Undo2 className="h-4 w-4 text-primary" />
+              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
+              <Undo2 className="h-3.5 w-3.5 text-primary" />
             </motion.button>
           )}
           {onShowFavorites && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={onShowFavorites}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9">
-              <Star className="h-4 w-4 text-yellow-500" />
+              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
+              <Star className="h-3.5 w-3.5 text-yellow-500" />
             </motion.button>
           )}
           {onShowBookmarks && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={onShowBookmarks}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9">
-              <Bookmark className="h-4 w-4 text-accent" />
+              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
+              <Bookmark className="h-3.5 w-3.5 text-accent" />
             </motion.button>
           )}
           <BoostSpotlight compact />
         </div>
       </div>
 
-      <div className="px-4">
-        <NearbyTonight onNavigateToChat={onNavigateToChat} />
+      {/* Filter chips - horizontal scroll */}
+      <div className="px-4 py-2">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+          {filterOptions.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                activeFilter === f.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="px-4">
-        <SpotlightProfiles />
-      </div>
-
-      <div className="px-4">
-        <AIRecommendations />
-      </div>
-
+      {/* Card stack area */}
       <div className="relative mx-4 flex-1 mb-4">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">Finding people near you...</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <p className="text-xs text-muted-foreground">Finding people near you...</p>
+            </div>
           </div>
         ) : (
           <AnimatePresence>
@@ -302,9 +325,13 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex h-full flex-col items-center justify-center text-center">
-                <div className="rounded-full gradient-love p-6 mb-4"><Sparkles className="h-10 w-10 text-primary-foreground" /></div>
+                <div className="rounded-full gradient-love p-6 mb-4">
+                  <Sparkles className="h-10 w-10 text-primary-foreground" />
+                </div>
                 <h2 className="text-xl font-bold font-display text-foreground">No more profiles</h2>
-                <p className="mt-2 text-sm text-muted-foreground max-w-[240px]">Check back later — new people join every day!</p>
+                <p className="mt-2 text-sm text-muted-foreground max-w-[240px]">
+                  Check back later — new people join every day!
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
