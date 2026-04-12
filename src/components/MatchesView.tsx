@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import ChatView from "./ChatView";
+import CallView from "./CallView";
 import ReportDialog from "./ReportDialog";
 import MatchStreak from "./MatchStreak";
 import MatchExpirationTimer from "./MatchExpirationTimer";
@@ -36,6 +37,7 @@ const MatchesView = () => {
   const [matches, setMatches] = useState<MatchEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ matchId: string; profile: Tables<"profiles">; mode: "audio" | "video" } | null>(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("compatibility");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
@@ -155,6 +157,10 @@ const MatchesView = () => {
   if (sortBy === "active") filtered.sort((a, b) => (b.profile.is_online ? 1 : 0) - (a.profile.is_online ? 1 : 0));
   if (sortBy === "compatibility") filtered.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
   if (sortBy === "streak") filtered.sort((a, b) => b.streakCount - a.streakCount);
+
+  if (activeCall) {
+    return <CallView matchId={activeCall.matchId} otherUserProfile={activeCall.profile} mode={activeCall.mode} onEnd={() => setActiveCall(null)} />;
+  }
 
   if (selectedChat) {
     return <ChatView matchId={selectedChat.matchId} otherUserProfile={selectedChat.profile} onBack={() => setSelectedChat(null)} />;
@@ -318,9 +324,9 @@ const MatchesView = () => {
                   className="flex items-center gap-1 rounded-xl gradient-love px-3 py-1.5 text-xs font-semibold text-primary-foreground flex-1 justify-center">
                   <MessageCircle className="h-3.5 w-3.5" />{!match.lastMessage ? "Break the Ice" : "Message"}
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setSelectedChat({ matchId: match.matchId, profile: match.profile }); toast.success("Opening voice chat..."); }}
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setActiveCall({ matchId: match.matchId, profile: match.profile, mode: "audio" })}
                   className="flex items-center justify-center rounded-xl bg-muted h-8 w-8"><Phone className="h-3.5 w-3.5 text-muted-foreground" /></motion.button>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setSelectedChat({ matchId: match.matchId, profile: match.profile }); toast.success("Opening video chat..."); }}
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setActiveCall({ matchId: match.matchId, profile: match.profile, mode: "video" })}
                   className="flex items-center justify-center rounded-xl bg-muted h-8 w-8"><Video className="h-3.5 w-3.5 text-muted-foreground" /></motion.button>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleFavorite(match.profile.user_id)}
                   className={`flex items-center justify-center rounded-xl h-8 w-8 ${favoriteIds.has(match.profile.user_id) ? "bg-yellow-500/15" : "bg-muted"}`}>
