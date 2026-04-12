@@ -158,6 +158,10 @@ const MatchesView = () => {
   if (sortBy === "compatibility") filtered.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
   if (sortBy === "streak") filtered.sort((a, b) => b.streakCount - a.streakCount);
 
+  if (activeCall) {
+    return <CallView matchId={activeCall.matchId} otherUserProfile={activeCall.profile} mode={activeCall.mode} onEnd={() => setActiveCall(null)} />;
+  }
+
   if (selectedChat) {
     return <ChatView matchId={selectedChat.matchId} otherUserProfile={selectedChat.profile} onBack={() => setSelectedChat(null)} />;
   }
