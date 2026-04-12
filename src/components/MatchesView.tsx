@@ -37,6 +37,7 @@ const MatchesView = () => {
   const [matches, setMatches] = useState<MatchEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ matchId: string; profile: Tables<"profiles">; mode: "audio" | "video" } | null>(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("compatibility");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
