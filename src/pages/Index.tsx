@@ -20,6 +20,7 @@ import ReferralSystem from "@/components/ReferralSystem";
 import DailyRewards from "@/components/DailyRewards";
 import VIPSubscription from "@/components/VIPSubscription";
 import NotificationsView from "@/components/NotificationsView";
+import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -122,6 +123,7 @@ const Index = () => {
       {renderContent()}
       <DailyRewards open={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
       <NotificationsView open={showNotifications} onClose={() => setShowNotifications(false)} />
+      <IncomingCallOverlay />
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
