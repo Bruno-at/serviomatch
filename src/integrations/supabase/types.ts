@@ -56,6 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      call_sessions: {
+        Row: {
+          caller_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          match_id: string | null
+          mode: string
+          receiver_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          caller_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          match_id?: string | null
+          mode?: string
+          receiver_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          caller_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          match_id?: string | null
+          mode?: string
+          receiver_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           active: boolean
