@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import VideoGrid from "./VideoGrid";
+import LiveShareModal from "./LiveShareModal";
 
 interface LiveRoomProps {
   room: Tables<"live_rooms">;
