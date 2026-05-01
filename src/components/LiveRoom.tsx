@@ -57,7 +57,8 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
   const [joiningVideo, setJoiningVideo] = useState(false);
   const [wasDisconnected, setWasDisconnected] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
@@ -656,7 +657,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           </motion.div>
           <span className="text-white text-[9px]">Like</span>
         </motion.button>
-        <motion.button whileTap={{ scale: 0.8 }} className="flex flex-col items-center gap-0.5">
+        <motion.button whileTap={{ scale: 0.8 }} onClick={() => setShowShare(true)} className="flex flex-col items-center gap-0.5">
           <div className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
             <Share2 className="h-5 w-5 text-white" />
           </div>
