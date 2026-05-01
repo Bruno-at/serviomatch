@@ -819,6 +819,15 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
           <Send className="h-4 w-4 text-white" />
         </motion.button>
       </div>
+
+      {/* Share modal */}
+      <LiveShareModal
+        open={showShare}
+        onClose={() => setShowShare(false)}
+        roomId={room.id}
+        roomTitle={room.title}
+        hostName={hostName}
+      />
     </div>
   );
 };
