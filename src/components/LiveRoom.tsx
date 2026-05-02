@@ -131,29 +131,77 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
   // Send a join request (viewer only)
   const sendJoinRequest = async () => {
-    if (!user) return;
-    setJoinRequestStatus("pending");
-    const { error } = await supabase.from("live_join_requests").insert({
-      room_id: room.id,
-      user_id: user.id,
-      status: "pending",
-    });
-    if (error) {
-      toast.error("Failed to send request");
-      setJoinRequestStatus("none");
-    } else {
-      toast("Request sent! Waiting for host to accept… ✋");
+    if (!user) {
+      toast.error("You must be signed in");
+      return;
     }
+    if (isHost) return;
+
+    const prevStatus = joinRequestStatus;
+    setJoinRequestStatus("pending");
+
+    // Clean up any previous rejected/old requests by this user for this room
+    await supabase
+      .from("live_join_requests")
+      .delete()
+      .eq("room_id", room.id)
+      .eq("user_id", user.id);
+
+    const { data, error } = await supabase
+      .from("live_join_requests")
+      .insert({
+        room_id: room.id,
+        user_id: user.id,
+        status: "pending",
+      })
+      .select()
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error("Join request failed:", error);
+      toast.error(error?.message || "Failed to send request");
+      setJoinRequestStatus(prevStatus);
+      return;
+    }
+
+    toast.success("Request sent! Waiting for host… ✋");
+
+    // Notify the host
+    await supabase.from("notifications").insert({
+      user_id: room.host_id,
+      type: "general",
+      title: "New join request",
+      message: "Someone wants to join your live",
+    });
   };
 
   // Host accepts/rejects a request
   const handleRequest = async (requestId: string, action: "accepted" | "rejected") => {
-    await supabase
+    const req = joinRequests.find((r) => r.id === requestId);
+    const { error } = await supabase
       .from("live_join_requests")
       .update({ status: action })
       .eq("id", requestId);
+
+    if (error) {
+      toast.error("Failed to update request");
+      return;
+    }
+
     setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
-    toast(action === "accepted" ? "User accepted ✅" : "Request rejected");
+    toast(action === "accepted" ? `${req?.displayName || "User"} accepted ✅` : "Request rejected");
+
+    // Notify requester
+    if (req) {
+      await supabase.from("notifications").insert({
+        user_id: req.user_id,
+        type: "general",
+        title: action === "accepted" ? "You're in! 🎉" : "Request declined",
+        message: action === "accepted"
+          ? `${hostName} accepted your request to join the live`
+          : `${hostName} declined your request`,
+      });
+    }
   };
 
   // Fetch pending requests (host)
