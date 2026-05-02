@@ -328,7 +328,15 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
         async (payload) => {
           if (isHost) {
             // Host: refresh pending requests
-            fetchJoinRequests();
+            await fetchJoinRequests();
+            if (payload.eventType === "INSERT") {
+              const row = payload.new as any;
+              const p = await getProfile(row.user_id);
+              toast(`✋ ${p.name} wants to join`, {
+                action: { label: "View", onClick: () => setShowRequests(true) },
+              });
+              setShowRequests(true);
+            }
           } else if (user) {
             // Viewer: check if own request was updated
             const row = payload.new as any;
