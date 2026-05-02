@@ -331,8 +331,23 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hid
 
     room
       .connect(url, token)
-      .then(() => {
-        room.localParticipant.enableCameraAndMicrophone();
+      .then(async () => {
+        try {
+          // Always enable mic
+          await room.localParticipant.setMicrophoneEnabled(true);
+        } catch (err: any) {
+          console.error("Microphone error:", err);
+          setMediaError("Microphone not available");
+        }
+        if (mode === "video") {
+          try {
+            await room.localParticipant.setCameraEnabled(true);
+          } catch (err: any) {
+            console.error("Camera error:", err);
+            setMediaError("Camera not available");
+            setCameraOn(false);
+          }
+        }
       })
       .catch((err) => {
         console.error("LiveKit connect error:", err);
