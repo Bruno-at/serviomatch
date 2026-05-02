@@ -439,6 +439,12 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hid
         </div>
       )}
 
+      {mediaError && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 rounded-full bg-destructive/90 backdrop-blur-sm px-3 py-1.5 shadow-lg">
+          <span className="text-xs font-semibold text-primary-foreground">{mediaError}</span>
+        </div>
+      )}
+
       {/* Reconnecting overlay */}
       <AnimatePresence>
         {isReconnecting && connected && (
