@@ -28,6 +28,7 @@ interface VideoGridProps {
   onParticipantLeft?: (participantName: string) => void;
   hideControls?: boolean;
   onMediaReady?: () => void;
+  mode?: "audio" | "video";
 }
 
 interface ParticipantTile {
