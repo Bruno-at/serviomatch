@@ -201,7 +201,7 @@ const IncomingCallOverlay = () => {
             <p className="text-white text-sm font-semibold">{active.name}</p>
           </div>
         </div>
-        <VideoGrid token={active.token} url={active.url} onDisconnect={handleEndActive} />
+        <VideoGrid token={active.token} url={active.url} mode={(active.session.mode as "audio" | "video") || "video"} onDisconnect={handleEndActive} />
       </div>
     );
   }

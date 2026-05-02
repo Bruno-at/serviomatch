@@ -28,6 +28,7 @@ interface VideoGridProps {
   onParticipantLeft?: (participantName: string) => void;
   hideControls?: boolean;
   onMediaReady?: () => void;
+  mode?: "audio" | "video";
 }
 
 interface ParticipantTile {
@@ -261,16 +262,17 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady, mode = "video" }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
-  const [cameraOn, setCameraOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(mode === "video");
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   useEffect(() => {
     intentionalDisconnectRef.current = false;
@@ -329,8 +331,23 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hid
 
     room
       .connect(url, token)
-      .then(() => {
-        room.localParticipant.enableCameraAndMicrophone();
+      .then(async () => {
+        try {
+          // Always enable mic
+          await room.localParticipant.setMicrophoneEnabled(true);
+        } catch (err: any) {
+          console.error("Microphone error:", err);
+          setMediaError("Microphone not available");
+        }
+        if (mode === "video") {
+          try {
+            await room.localParticipant.setCameraEnabled(true);
+          } catch (err: any) {
+            console.error("Camera error:", err);
+            setMediaError("Camera not available");
+            setCameraOn(false);
+          }
+        }
       })
       .catch((err) => {
         console.error("LiveKit connect error:", err);
@@ -419,6 +436,12 @@ const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hid
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-foreground/60 backdrop-blur-sm px-2.5 py-1">
           <Users className="h-3.5 w-3.5 text-primary-foreground" />
           <span className="text-xs font-semibold text-primary-foreground">{participants.length}</span>
+        </div>
+      )}
+
+      {mediaError && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 rounded-full bg-destructive/90 backdrop-blur-sm px-3 py-1.5 shadow-lg">
+          <span className="text-xs font-semibold text-primary-foreground">{mediaError}</span>
         </div>
       )}
 

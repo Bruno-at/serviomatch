@@ -200,7 +200,7 @@ const CallView = ({ matchId, otherUserProfile, mode, onEnd }: CallViewProps) => 
             </div>
           </div>
         </div>
-        <VideoGrid token={token} url={url} onDisconnect={handleEndCall} />
+        <VideoGrid token={token} url={url} mode={mode} onDisconnect={handleEndCall} />
       </div>
     );
   }
