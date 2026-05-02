@@ -262,16 +262,17 @@ const ScreenShareTile = ({ participant, isLocal }: ScreenShareInfo) => {
   );
 };
 
-const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady }: VideoGridProps) => {
+const VideoGrid = ({ token, url, onDisconnect, onDropped, onParticipantLeft, hideControls, onMediaReady, mode = "video" }: VideoGridProps) => {
   const roomRef = useRef<Room | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const [participants, setParticipants] = useState<ParticipantTile[]>([]);
-  const [cameraOn, setCameraOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(mode === "video");
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   useEffect(() => {
     intentionalDisconnectRef.current = false;
