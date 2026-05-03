@@ -304,10 +304,17 @@ const NearbyView = () => {
                     {person.display_name}{person.age ? `, ${person.age}` : ""}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {person.place_name || "Locating…"}
-                    </span>
+                    {person.place_name ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        {person.place_name}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 opacity-60" />
+                        <span className="inline-block h-2.5 w-20 rounded bg-muted animate-pulse" />
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-xs text-muted-foreground">{formatDistance(person.distance)}</span>
                     <span className="text-xs text-muted-foreground">·</span>
