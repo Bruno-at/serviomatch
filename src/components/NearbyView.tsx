@@ -106,19 +106,38 @@ const NearbyView = () => {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    let lastDbUpdate = 0;
+    let lastLat = 0;
+    let lastLng = 0;
+    let firstFix = true;
+
+    const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setMyLocation({ lat: latitude, lng: longitude });
-        updateMyLocation(latitude, longitude);
-        fetchNearby(latitude, longitude);
+
+        const now = Date.now();
+        const movedKm = haversineDistance(lastLat, lastLng, latitude, longitude);
+        const shouldPersist = firstFix || now - lastDbUpdate > 120000 || movedKm > 0.1;
+
+        if (shouldPersist) {
+          lastDbUpdate = now;
+          lastLat = latitude;
+          lastLng = longitude;
+          updateMyLocation(latitude, longitude);
+        }
+
+        if (firstFix) {
+          firstFix = false;
+          fetchNearby(latitude, longitude);
+        }
       },
       () => {
         setLocationError(true);
         setLoading(false);
         toast.error("Location access needed to find nearby people");
       },
-      { enableHighAccuracy: false, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
 
     // Heartbeat: mark online every 60s
@@ -129,8 +148,8 @@ const NearbyView = () => {
         .eq("user_id", user.id);
     }, 60000);
 
-    // Mark offline on unmount
     return () => {
+      navigator.geolocation.clearWatch(watchId);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, [user, updateMyLocation, fetchNearby]);
