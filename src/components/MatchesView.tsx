@@ -28,6 +28,7 @@ interface MatchEntry {
   streakCount: number;
   compatibilityScore: number;
   sharedInterests: string[];
+  placeName?: string;
 }
 
 type SortOption = "newest" | "active" | "compatibility" | "streak";
