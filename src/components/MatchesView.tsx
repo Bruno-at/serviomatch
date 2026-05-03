@@ -307,6 +307,20 @@ const MatchesView = () => {
                     </span>
                     <MatchExpirationTimer matchedAt={match.matchedAt} hasMessages={!!match.lastMessage} />
                   </div>
+                  {(match.profile.latitude != null && match.profile.longitude != null) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInGoogleMaps(match.profile.latitude!, match.profile.longitude!, match.profile.display_name);
+                      }}
+                      className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="truncate max-w-[180px]">
+                        {match.profile.is_online
+                          ? (match.placeName || "Locating…")
+                          : (match.placeName ? `Last seen near ${match.placeName}` : "Offline")}
+                      </span>
                   {/* Compatibility bar */}
                   <div className="mt-1">
                     <CompatibilityMeter score={match.compatibilityScore} />
