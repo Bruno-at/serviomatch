@@ -321,6 +321,8 @@ const MatchesView = () => {
                           ? (match.placeName || "Locating…")
                           : (match.placeName ? `Last seen near ${match.placeName}` : "Offline")}
                       </span>
+                    </button>
+                  )}
                   {/* Compatibility bar */}
                   <div className="mt-1">
                     <CompatibilityMeter score={match.compatibilityScore} />
