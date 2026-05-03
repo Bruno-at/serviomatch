@@ -16,6 +16,7 @@ import MatchExpirationTimer from "./MatchExpirationTimer";
 import CompatibilityMeter from "./CompatibilityMeter";
 import SmartConversationStarters from "./SmartConversationStarters";
 import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQuestions";
+import { reverseGeocode, openInGoogleMaps } from "@/lib/geo";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface MatchEntry {
