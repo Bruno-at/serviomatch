@@ -21,14 +21,14 @@ interface DiscoverViewProps {
 
 type DiscoverFilter = "all" | "1km" | "5km" | "10km" | "trending" | "new" | "spotlight";
 
-const filterOptions: { key: DiscoverFilter; label: string }[] = [
-  { key: "all", label: "For You" },
+const filterOptions: { key: DiscoverFilter; label: string; icon?: typeof Sparkles }[] = [
+  { key: "all", label: "For You", icon: Sparkles },
   { key: "1km", label: "1 km" },
   { key: "5km", label: "5 km" },
   { key: "10km", label: "10 km" },
-  { key: "trending", label: "🔥 Trending" },
-  { key: "new", label: "🆕 New" },
-  { key: "spotlight", label: "🌟 Spotlight" },
+  { key: "trending", label: "Trending" },
+  { key: "new", label: "New" },
+  { key: "spotlight", label: "Spotlight" },
 ];
 
 const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: DiscoverViewProps) => {
