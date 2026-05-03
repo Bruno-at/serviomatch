@@ -99,6 +99,17 @@ const MatchesView = () => {
 
     setMatches(result);
     setLoading(false);
+
+    // Background: reverse-geocode locations for matches who shared coords
+    result.forEach(async (m) => {
+      const { latitude, longitude, is_online } = m.profile;
+      if (latitude == null || longitude == null) return;
+      if (!is_online) return; // privacy: only show place when online
+      const name = await reverseGeocode(latitude, longitude);
+      setMatches((prev) =>
+        prev.map((x) => (x.matchId === m.matchId ? { ...x, placeName: name } : x))
+      );
+    });
   }, [user]);
 
   useEffect(() => { fetchMatches(); }, [fetchMatches]);
