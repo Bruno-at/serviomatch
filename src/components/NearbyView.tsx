@@ -318,11 +318,9 @@ const NearbyView = () => {
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (person.place_name) toast(person.place_name);
-                  }}
+                  onClick={() => openInGoogleMaps(person.latitude, person.longitude, person.display_name)}
                   className="rounded-full gradient-love p-2 shadow-sm"
-                  aria-label="Show location"
+                  aria-label="Open in Google Maps"
                 >
                   <MapPin className="h-4 w-4 text-primary-foreground" />
                 </motion.button>
