@@ -235,27 +235,34 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-1">
-        <h1 className="text-2xl font-bold font-display text-foreground">
-          Spark<span className="text-primary">.</span>
-        </h1>
+      <div className="flex items-center justify-between px-5 pt-5 pb-2 border-b border-border/40">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-foreground leading-none">
+            Spark<span className="text-primary">.</span>
+          </h1>
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {activeFilter === "all"
+              ? "Curated for you"
+              : filterOptions.find((f) => f.key === activeFilter)?.label}
+          </p>
+        </div>
         <div className="flex items-center gap-1.5">
           {lastSwiped && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={handleUndo}
-              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
-              <Undo2 className="h-3.5 w-3.5 text-primary" />
+              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
+              <Undo2 className="h-4 w-4 text-primary" />
             </motion.button>
           )}
           {onShowFavorites && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={onShowFavorites}
-              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
-              <Star className="h-3.5 w-3.5 text-yellow-500" />
+              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
+              <Star className="h-4 w-4 text-yellow-500" />
             </motion.button>
           )}
           {onShowBookmarks && (
             <motion.button whileTap={{ scale: 0.9 }} onClick={onShowBookmarks}
-              className="flex items-center justify-center rounded-full bg-muted h-8 w-8">
-              <Bookmark className="h-3.5 w-3.5 text-accent" />
+              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
+              <Bookmark className="h-4 w-4 text-accent" />
             </motion.button>
           )}
           <BoostSpotlight compact />
@@ -263,21 +270,26 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       </div>
 
       {/* Filter chips - horizontal scroll */}
-      <div className="px-4 py-2">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-          {filterOptions.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                activeFilter === f.key
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="px-4 py-3">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {filterOptions.map((f) => {
+            const Icon = f.icon;
+            const isActive = activeFilter === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setActiveFilter(f.key)}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-all border ${
+                  isActive
+                    ? "bg-foreground text-background border-foreground shadow-sm"
+                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground"
+                }`}
+              >
+                {Icon && <Icon className="h-3 w-3" />}
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
