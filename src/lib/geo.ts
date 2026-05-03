@@ -3,7 +3,6 @@
 const placeCache = new Map<string, string>();
 
 export const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-  // ~1km accuracy cache key
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
   if (placeCache.has(key)) return placeCache.get(key)!;
 
@@ -11,9 +10,9 @@ export const reverseGeocode = async (lat: number, lng: number): Promise<string> 
     const res = await fetch(
       `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
     );
+    if (!res.ok) throw new Error("geocode failed");
     const data = await res.json();
 
-    // Build a richer place string: locality, city, region, country
     const parts: string[] = [];
     const seen = new Set<string>();
     const push = (v?: string) => {
@@ -28,35 +27,56 @@ export const reverseGeocode = async (lat: number, lng: number): Promise<string> 
     push(data.principalSubdivision);
     push(data.countryName);
 
-    const name = parts.length ? parts.join(", ") : "Unknown location";
+    const name = parts.length ? parts.join(", ") : "Location unavailable";
     placeCache.set(key, name);
     return name;
   } catch {
-    return "Unknown location";
+    return "Location unavailable";
   }
 };
 
 /**
- * Open Google Maps centered on the given coordinates.
- * On mobile: uses the geo: scheme so the native app opens (with web fallback).
- * On desktop: opens maps.google.com in a new tab.
+ * Build the canonical Google Maps URL for given coordinates.
+ * Exposed for testing and reuse.
  */
-export const openInGoogleMaps = (lat: number, lng: number, label?: string) => {
-  const name = encodeURIComponent(label || "Location");
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+export const buildGoogleMapsUrl = (lat: number, lng: number): string =>
+  `https://maps.google.com/maps?q=${lat},${lng}`;
 
-  if (isMobile) {
-    // geo: scheme works on Android; iOS handles maps.google.com gracefully
-    const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}(${name})`;
-    // Try native first, fall back to web after a beat
-    const start = Date.now();
-    window.location.href = geoUrl;
-    setTimeout(() => {
-      if (Date.now() - start < 1500) window.open(webUrl, "_blank");
-    }, 800);
-    return;
+export const isMobileUA = (ua: string = navigator.userAgent): boolean =>
+  /iPhone|iPad|iPod|Android/i.test(ua);
+
+/**
+ * Open Google Maps centered on the given coordinates in a NEW TAB.
+ *
+ * Inside sandboxed previews/iframes, navigating the current frame to
+ * google.com is blocked by X-Frame-Options (ERR_BLOCKED_BY_RESPONSE).
+ * The robust fix is to always open a real new top-level tab via an
+ * anchor click with rel="noopener" — this escapes the iframe sandbox
+ * and never tries to embed Google Maps.
+ */
+export const openInGoogleMaps = (lat: number, lng: number, _label?: string): void => {
+  const url = buildGoogleMapsUrl(lat, lng);
+
+  try {
+    // Prefer a synthetic anchor click — works in sandboxed iframes where
+    // window.open may be blocked, and avoids navigating the current frame.
+    if (typeof document !== "undefined") {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
+  } catch {
+    // fall through
   }
 
-  window.open(webUrl, "_blank", "noopener,noreferrer");
+  try {
+    window.open(url, "_blank", "noopener,noreferrer");
+  } catch {
+    // last resort
+  }
 };
