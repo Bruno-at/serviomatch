@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { reverseGeocode, openInGoogleMaps } from "@/lib/geo";
 
 interface NearbyUser {
   user_id: string;
@@ -29,28 +30,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// Cache: "lat,lng" -> place name
-const placeCache = new Map<string, string>();
-
-const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-  // Round to 2 decimals for caching (~1km accuracy, plenty for "city, country")
-  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-  if (placeCache.has(key)) return placeCache.get(key)!;
-
-  try {
-    const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
-    );
-    const data = await res.json();
-    const locality = data.locality || data.city || data.principalSubdivision || "";
-    const country = data.countryName || "";
-    const name = locality && country ? `${locality}, ${country}` : locality || country || "Unknown";
-    placeCache.set(key, name);
-    return name;
-  } catch {
-    return "Unknown";
-  }
-};
+// reverseGeocode now imported from @/lib/geo
 
 // "Online" if last_online within last 2 minutes
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
@@ -126,19 +106,38 @@ const NearbyView = () => {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    let lastDbUpdate = 0;
+    let lastLat = 0;
+    let lastLng = 0;
+    let firstFix = true;
+
+    const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setMyLocation({ lat: latitude, lng: longitude });
-        updateMyLocation(latitude, longitude);
-        fetchNearby(latitude, longitude);
+
+        const now = Date.now();
+        const movedKm = haversineDistance(lastLat, lastLng, latitude, longitude);
+        const shouldPersist = firstFix || now - lastDbUpdate > 120000 || movedKm > 0.1;
+
+        if (shouldPersist) {
+          lastDbUpdate = now;
+          lastLat = latitude;
+          lastLng = longitude;
+          updateMyLocation(latitude, longitude);
+        }
+
+        if (firstFix) {
+          firstFix = false;
+          fetchNearby(latitude, longitude);
+        }
       },
       () => {
         setLocationError(true);
         setLoading(false);
         toast.error("Location access needed to find nearby people");
       },
-      { enableHighAccuracy: false, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
 
     // Heartbeat: mark online every 60s
@@ -149,8 +148,8 @@ const NearbyView = () => {
         .eq("user_id", user.id);
     }, 60000);
 
-    // Mark offline on unmount
     return () => {
+      navigator.geolocation.clearWatch(watchId);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, [user, updateMyLocation, fetchNearby]);
@@ -319,11 +318,9 @@ const NearbyView = () => {
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (person.place_name) toast(person.place_name);
-                  }}
+                  onClick={() => openInGoogleMaps(person.latitude, person.longitude, person.display_name)}
                   className="rounded-full gradient-love p-2 shadow-sm"
-                  aria-label="Show location"
+                  aria-label="Open in Google Maps"
                 >
                   <MapPin className="h-4 w-4 text-primary-foreground" />
                 </motion.button>

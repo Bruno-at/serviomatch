@@ -16,6 +16,7 @@ import MatchExpirationTimer from "./MatchExpirationTimer";
 import CompatibilityMeter from "./CompatibilityMeter";
 import SmartConversationStarters from "./SmartConversationStarters";
 import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQuestions";
+import { reverseGeocode, openInGoogleMaps } from "@/lib/geo";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface MatchEntry {
@@ -27,6 +28,7 @@ interface MatchEntry {
   streakCount: number;
   compatibilityScore: number;
   sharedInterests: string[];
+  placeName?: string;
 }
 
 type SortOption = "newest" | "active" | "compatibility" | "streak";
@@ -97,6 +99,17 @@ const MatchesView = () => {
 
     setMatches(result);
     setLoading(false);
+
+    // Background: reverse-geocode locations for matches who shared coords
+    result.forEach(async (m) => {
+      const { latitude, longitude, is_online } = m.profile;
+      if (latitude == null || longitude == null) return;
+      if (!is_online) return; // privacy: only show place when online
+      const name = await reverseGeocode(latitude, longitude);
+      setMatches((prev) =>
+        prev.map((x) => (x.matchId === m.matchId ? { ...x, placeName: name } : x))
+      );
+    });
   }, [user]);
 
   useEffect(() => { fetchMatches(); }, [fetchMatches]);
@@ -294,6 +307,22 @@ const MatchesView = () => {
                     </span>
                     <MatchExpirationTimer matchedAt={match.matchedAt} hasMessages={!!match.lastMessage} />
                   </div>
+                  {(match.profile.latitude != null && match.profile.longitude != null) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInGoogleMaps(match.profile.latitude!, match.profile.longitude!, match.profile.display_name);
+                      }}
+                      className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="truncate max-w-[180px]">
+                        {match.profile.is_online
+                          ? (match.placeName || "Locating…")
+                          : (match.placeName ? `Last seen near ${match.placeName}` : "Offline")}
+                      </span>
+                    </button>
+                  )}
                   {/* Compatibility bar */}
                   <div className="mt-1">
                     <CompatibilityMeter score={match.compatibilityScore} />
