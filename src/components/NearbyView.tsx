@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { reverseGeocode, openInGoogleMaps } from "@/lib/geo";
 
 interface NearbyUser {
   user_id: string;
