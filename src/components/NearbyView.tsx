@@ -30,28 +30,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// Cache: "lat,lng" -> place name
-const placeCache = new Map<string, string>();
-
-const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-  // Round to 2 decimals for caching (~1km accuracy, plenty for "city, country")
-  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-  if (placeCache.has(key)) return placeCache.get(key)!;
-
-  try {
-    const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
-    );
-    const data = await res.json();
-    const locality = data.locality || data.city || data.principalSubdivision || "";
-    const country = data.countryName || "";
-    const name = locality && country ? `${locality}, ${country}` : locality || country || "Unknown";
-    placeCache.set(key, name);
-    return name;
-  } catch {
-    return "Unknown";
-  }
-};
+// reverseGeocode now imported from @/lib/geo
 
 // "Online" if last_online within last 2 minutes
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
