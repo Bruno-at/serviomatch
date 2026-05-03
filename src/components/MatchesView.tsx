@@ -316,11 +316,17 @@ const MatchesView = () => {
                       className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                     >
                       <MapPin className="h-3 w-3" />
-                      <span className="truncate max-w-[180px]">
-                        {match.profile.is_online
-                          ? (match.placeName || "Locating…")
-                          : (match.placeName ? `Last seen near ${match.placeName}` : "Offline")}
-                      </span>
+                      {match.profile.is_online ? (
+                        match.placeName ? (
+                          <span className="truncate max-w-[180px]">{match.placeName}</span>
+                        ) : (
+                          <span className="inline-block h-2.5 w-24 rounded bg-muted animate-pulse" />
+                        )
+                      ) : (
+                        <span className="truncate max-w-[180px]">
+                          {match.placeName ? `Last seen near ${match.placeName}` : "Offline"}
+                        </span>
+                      )}
                     </button>
                   )}
                   {/* Compatibility bar */}
