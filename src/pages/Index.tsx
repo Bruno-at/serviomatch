@@ -104,7 +104,27 @@ const Index = () => {
     setShowCrush(false);
     setShowReferrals(false);
     setShowVIP(false);
+    setShowLikes(false);
     setActiveTab(tab);
+  };
+
+  const handleShowLikes = () => {
+    setShowSpeedDating(false);
+    setShowChallenges(false);
+    setShowLive(false);
+    setShowCrush(false);
+    setShowLikes(true);
+    if (user) {
+      // mark current count as seen
+      supabase
+        .from("likes")
+        .select("id", { count: "exact", head: true })
+        .eq("liked_id", user.id)
+        .then(({ count }) => {
+          localStorage.setItem(`likes_seen_${user.id}`, String(count || 0));
+          setLikesBadge(0);
+        });
+    }
   };
 
   const renderContent = () => {
