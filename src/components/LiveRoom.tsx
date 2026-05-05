@@ -339,7 +339,7 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
             }
           } else if (user) {
             // Viewer: check if own request was updated
-            const row = payload.new as any;
+            const row = (payload.new ?? payload.old) as any;
             if (row?.user_id === user.id) {
               const status = row.status as "pending" | "accepted" | "rejected";
               setJoinRequestStatus(status);
