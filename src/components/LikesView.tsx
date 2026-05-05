@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Heart, Lock, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Lock, Eye, Crown, Sparkles, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -18,12 +18,14 @@ interface LikeEntry {
 
 interface LikesViewProps {
   onShowVisitors?: () => void;
+  onShowVIP?: () => void;
 }
 
-const LikesView = ({ onShowVisitors }: LikesViewProps) => {
+const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
   const { user } = useAuth();
   const [likes, setLikes] = useState<LikeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const isPremium = false;
 
   const enrichLikes = async (rawLikes: any[]): Promise<LikeEntry[]> => {
