@@ -121,6 +121,11 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
             onClick={() => setMoreOpen((v) => !v)}
             className="relative flex flex-col items-center gap-0.5 px-3 py-1"
           >
+            {likesBadge > 0 && !moreOpen && (
+              <span className="absolute right-1 top-0 z-10 min-w-[16px] h-[16px] flex items-center justify-center rounded-full gradient-love px-1 text-[9px] font-bold text-primary-foreground">
+                {likesBadge > 9 ? "9+" : likesBadge}
+              </span>
+            )}
             {moreOpen ? (
               <X className="h-5 w-5 text-primary transition-colors" />
             ) : (
