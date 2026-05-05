@@ -173,6 +173,8 @@ const Index = () => {
         onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowCrush(false); setShowChallenges(true); }}
         onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowCrush(false); setShowLive(true); }}
         onCrush={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(false); setShowCrush(true); }}
+        onLikes={handleShowLikes}
+        likesBadge={likesBadge}
       />
     </div>
   );
