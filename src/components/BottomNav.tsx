@@ -73,7 +73,12 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
                     <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-muted ${tab.color}`}>
                       <tab.icon className="h-4.5 w-4.5" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{tab.label}</span>
+                    <span className="flex-1 text-sm font-medium text-foreground">{tab.label}</span>
+                    {tab.id === "likes" && likesBadge > 0 && (
+                      <span className="rounded-full gradient-love px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        {likesBadge > 99 ? "99+" : likesBadge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
