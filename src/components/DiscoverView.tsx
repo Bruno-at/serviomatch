@@ -194,13 +194,21 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     setCompatTarget({ name: currentProfile.display_name, score: result.score, shared: result.sharedInterests, matchedQuestions: result.matchedQuestions });
   }, [currentProfile, myProfile]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!currentProfile) return;
-    if (navigator.share) {
-      navigator.share({ title: `Check out ${currentProfile.display_name} on Spark!`, url: window.location.href });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Profile link copied!");
+    const data = { title: `Check out ${currentProfile.display_name} on Spark!`, url: window.location.href };
+    try {
+      if (navigator.share && navigator.canShare?.(data) !== false) {
+        await navigator.share(data);
+        return;
+      }
+      throw new Error("unsupported");
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Profile link copied!");
+      } catch {}
     }
   }, [currentProfile]);
 

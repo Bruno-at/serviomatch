@@ -9,6 +9,8 @@ interface BottomNavProps {
   onChallenges?: () => void;
   onLive?: () => void;
   onCrush?: () => void;
+  onLikes?: () => void;
+  likesBadge?: number;
 }
 
 const coreTabs = [
@@ -20,13 +22,14 @@ const coreTabs = [
 ];
 
 const moreTabs = [
+  { id: "likes", icon: Heart, label: "Likes You", color: "text-primary" },
   { id: "live", icon: Radio, label: "Go Live", color: "text-red-500" },
   { id: "speed", icon: Zap, label: "Speed Dating", color: "text-yellow-500" },
   { id: "crush", icon: Lock, label: "Secret Crush", color: "text-pink-500" },
   { id: "challenges", icon: Trophy, label: "Ranks & Challenges", color: "text-amber-500" },
 ];
 
-const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush, onLikes, likesBadge = 0 }: BottomNavProps) => {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const handleMoreAction = (id: string) => {
@@ -35,6 +38,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
     else if (id === "challenges" && onChallenges) onChallenges();
     else if (id === "live" && onLive) onLive();
     else if (id === "crush" && onCrush) onCrush();
+    else if (id === "likes" && onLikes) onLikes();
   };
 
   return (
@@ -69,7 +73,12 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
                     <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-muted ${tab.color}`}>
                       <tab.icon className="h-4.5 w-4.5" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{tab.label}</span>
+                    <span className="flex-1 text-sm font-medium text-foreground">{tab.label}</span>
+                    {tab.id === "likes" && likesBadge > 0 && (
+                      <span className="rounded-full gradient-love px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        {likesBadge > 99 ? "99+" : likesBadge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -112,6 +121,11 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
             onClick={() => setMoreOpen((v) => !v)}
             className="relative flex flex-col items-center gap-0.5 px-3 py-1"
           >
+            {likesBadge > 0 && !moreOpen && (
+              <span className="absolute right-1 top-0 z-10 min-w-[16px] h-[16px] flex items-center justify-center rounded-full gradient-love px-1 text-[9px] font-bold text-primary-foreground">
+                {likesBadge > 9 ? "9+" : likesBadge}
+              </span>
+            )}
             {moreOpen ? (
               <X className="h-5 w-5 text-primary transition-colors" />
             ) : (

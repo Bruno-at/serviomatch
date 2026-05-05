@@ -8,13 +8,23 @@ interface SocialShareProps {
 }
 
 const SocialShare = ({ title = "Check out Spark! 💕", text = "Join the best dating app!", compact = false }: SocialShareProps) => {
-  const share = () => {
+  const share = async () => {
     const url = window.location.origin;
-    if (navigator.share) {
-      navigator.share({ title, text, url });
-    } else {
-      navigator.clipboard.writeText(`${text} ${url}`);
-      toast.success("Link copied to clipboard!");
+    const data = { title, text, url };
+    try {
+      if (navigator.share && navigator.canShare?.(data) !== false) {
+        await navigator.share(data);
+        return;
+      }
+      throw new Error("unsupported");
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        toast.success("Link copied to clipboard!");
+      } catch {
+        window.open(url, "_blank");
+      }
     }
   };
 

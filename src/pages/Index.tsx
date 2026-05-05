@@ -37,8 +37,29 @@ const Index = () => {
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showVIP, setShowVIP] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
+  const [likesBadge, setLikesBadge] = useState(0);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+
+  // Track unseen likes count
+  useEffect(() => {
+    if (!user) return;
+    const refreshCount = async () => {
+      const { count } = await supabase
+        .from("likes")
+        .select("id", { count: "exact", head: true })
+        .eq("liked_id", user.id);
+      const seen = parseInt(localStorage.getItem(`likes_seen_${user.id}`) || "0", 10);
+      setLikesBadge(Math.max(0, (count || 0) - seen));
+    };
+    refreshCount();
+    const ch = supabase
+      .channel("likes-badge")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${user.id}` }, refreshCount)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
 
   // Auto-show daily rewards on first load
   useEffect(() => {
@@ -83,7 +104,27 @@ const Index = () => {
     setShowCrush(false);
     setShowReferrals(false);
     setShowVIP(false);
+    setShowLikes(false);
     setActiveTab(tab);
+  };
+
+  const handleShowLikes = () => {
+    setShowSpeedDating(false);
+    setShowChallenges(false);
+    setShowLive(false);
+    setShowCrush(false);
+    setShowLikes(true);
+    if (user) {
+      // mark current count as seen
+      supabase
+        .from("likes")
+        .select("id", { count: "exact", head: true })
+        .eq("liked_id", user.id)
+        .then(({ count }) => {
+          localStorage.setItem(`likes_seen_${user.id}`, String(count || 0));
+          setLikesBadge(0);
+        });
+    }
   };
 
   const renderContent = () => {
@@ -96,6 +137,7 @@ const Index = () => {
     if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
     if (showReferrals) return <ReferralSystem onBack={() => setShowReferrals(false)} />;
     if (showVIP) return <VIPSubscription onBack={() => setShowVIP(false)} />;
+    if (showLikes) return <LikesView onShowVisitors={() => { setShowLikes(false); setShowVisitors(true); }} onShowVIP={() => { setShowLikes(false); setShowVIP(true); }} />;
 
     return (
       <>
@@ -131,6 +173,8 @@ const Index = () => {
         onChallenges={() => { setShowLive(false); setShowSpeedDating(false); setShowCrush(false); setShowChallenges(true); }}
         onLive={() => { setShowSpeedDating(false); setShowChallenges(false); setShowCrush(false); setShowLive(true); }}
         onCrush={() => { setShowSpeedDating(false); setShowChallenges(false); setShowLive(false); setShowCrush(true); }}
+        onLikes={handleShowLikes}
+        likesBadge={likesBadge}
       />
     </div>
   );

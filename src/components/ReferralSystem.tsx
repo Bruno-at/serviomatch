@@ -67,13 +67,27 @@ const ReferralSystem = ({ onBack }: ReferralSystemProps) => {
     toast.success("Referral code copied! 📋");
   };
 
-  const shareLink = () => {
+  const shareLink = async () => {
     const url = `${window.location.origin}?ref=${referralCode}`;
-    if (navigator.share) {
-      navigator.share({ title: "Join me on Spark! 💕", text: `Use my code ${referralCode} to get free coins!`, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success("Invite link copied!");
+    const shareData = {
+      title: "Join me on Spark! 💕",
+      text: `Use my code ${referralCode} to get free coins!`,
+      url,
+    };
+    try {
+      if (navigator.share && navigator.canShare?.(shareData) !== false) {
+        await navigator.share(shareData);
+        return;
+      }
+      throw new Error("share-unsupported");
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Invite link copied! Paste it anywhere to share 💌");
+      } catch {
+        window.open(url, "_blank");
+      }
     }
   };
 
