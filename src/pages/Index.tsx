@@ -137,6 +137,7 @@ const Index = () => {
     if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
     if (showReferrals) return <ReferralSystem onBack={() => setShowReferrals(false)} />;
     if (showVIP) return <VIPSubscription onBack={() => setShowVIP(false)} />;
+    if (showLikes) return <LikesView onShowVisitors={() => { setShowLikes(false); setShowVisitors(true); }} onShowVIP={() => { setShowLikes(false); setShowVIP(true); }} />;
 
     return (
       <>
