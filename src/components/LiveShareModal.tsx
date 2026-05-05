@@ -76,11 +76,11 @@ const LiveShareModal = ({ open, onClose, roomId, roomTitle, hostName }: LiveShar
     if (!user || invited.has(target.user_id)) return;
     setInvited((prev) => new Set(prev).add(target.user_id));
 
-    const { error } = await supabase.from("notifications").insert({
-      user_id: target.user_id,
-      title: "You've been invited to a live 🎙️",
-      message: `${hostName} invited you to join "${roomTitle}"`,
-      type: "live_invite",
+    const { error } = await supabase.rpc("send_notification", {
+      _target_user_id: target.user_id,
+      _type: "live_invite",
+      _title: "You've been invited to a live 🎙️",
+      _message: `${hostName} invited you to join "${roomTitle}"`,
     });
 
     if (error) {

@@ -131,6 +131,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_transactions: {
+        Row: {
+          balance_after: number
+          created_at: string
+          delta: number
+          id: string
+          metadata: Json
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          delta: number
+          id?: string
+          metadata?: Json
+          reason: string
+          user_id: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          delta?: number
+          id?: string
+          metadata?: Json
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       compliments: {
         Row: {
           created_at: string
@@ -591,7 +621,6 @@ export type Database = {
           spotlight_expires_at: string | null
           updated_at: string
           user_id: string
-          verification_selfie_url: string | null
           video_url: string | null
           voice_intro_url: string | null
         }
@@ -618,7 +647,6 @@ export type Database = {
           spotlight_expires_at?: string | null
           updated_at?: string
           user_id: string
-          verification_selfie_url?: string | null
           video_url?: string | null
           voice_intro_url?: string | null
         }
@@ -645,7 +673,6 @@ export type Database = {
           spotlight_expires_at?: string | null
           updated_at?: string
           user_id?: string
-          verification_selfie_url?: string | null
           video_url?: string | null
           voice_intro_url?: string | null
         }
@@ -926,6 +953,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_verifications: {
+        Row: {
+          selfie_url: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          selfie_url?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          selfie_url?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       waves: {
         Row: {
           created_at: string
@@ -952,7 +1000,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      adjust_coin_balance: {
+        Args: { _delta: number; _metadata?: Json; _reason: string }
+        Returns: number
+      }
+      send_notification: {
+        Args: {
+          _message: string
+          _target_user_id: string
+          _title: string
+          _type: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

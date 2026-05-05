@@ -56,21 +56,28 @@ const VirtualGifts = ({ receiverId, matchId, onGiftSent }: VirtualGiftsProps) =>
     }
 
     setSending(true);
-    const newBalance = balance - gift.coin_cost;
 
-    await Promise.all([
-      supabase.from("gift_transactions").insert({
-        sender_id: user.id,
-        receiver_id: receiverId,
-        gift_name: gift.name,
-        gift_emoji: gift.emoji,
-        coin_cost: gift.coin_cost,
-        match_id: matchId || null,
-      }),
-      supabase.from("user_coins").update({ balance: newBalance }).eq("user_id", user.id),
-    ]);
+    const { data: newBalance, error: coinErr } = await supabase.rpc("adjust_coin_balance", {
+      _delta: -gift.coin_cost,
+      _reason: "gift_send",
+      _metadata: { gift_name: gift.name, receiver_id: receiverId },
+    });
+    if (coinErr) {
+      toast.error("Not enough coins! 💰");
+      setSending(false);
+      return;
+    }
 
-    setBalance(newBalance);
+    await supabase.from("gift_transactions").insert({
+      sender_id: user.id,
+      receiver_id: receiverId,
+      gift_name: gift.name,
+      gift_emoji: gift.emoji,
+      coin_cost: gift.coin_cost,
+      match_id: matchId || null,
+    });
+
+    setBalance(newBalance ?? balance - gift.coin_cost);
     setSending(false);
     setOpen(false);
     onGiftSent?.(gift.emoji);

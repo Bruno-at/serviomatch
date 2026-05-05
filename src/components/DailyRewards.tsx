@@ -78,9 +78,11 @@ const DailyRewards = ({ open, onClose }: DailyRewardsProps) => {
     // Give coins
     const coinReward = dayIndex === 0 ? 10 : dayIndex === 2 ? 20 : dayIndex === 4 ? 30 : dayIndex === 6 ? 100 : 0;
     if (coinReward > 0) {
-      const { data: coins } = await supabase.from("user_coins").select("balance").eq("user_id", user.id).maybeSingle();
-      const current = coins?.balance || 0;
-      await supabase.from("user_coins").update({ balance: current + coinReward }).eq("user_id", user.id);
+      await supabase.rpc("adjust_coin_balance", {
+        _delta: coinReward,
+        _reason: "daily_reward",
+        _metadata: { day: dayIndex + 1 },
+      });
     }
 
     setStreakCount(newStreak);

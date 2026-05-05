@@ -94,8 +94,11 @@ const VIPSubscription = ({ onBack }: VIPSubscriptionProps) => {
 
     // Give bonus coins
     const bonus = planId === "gold" ? 200 : 500;
-    const { data: coins } = await supabase.from("user_coins").select("balance").eq("user_id", user.id).maybeSingle();
-    await supabase.from("user_coins").update({ balance: (coins?.balance || 0) + bonus }).eq("user_id", user.id);
+    await supabase.rpc("adjust_coin_balance", {
+      _delta: bonus,
+      _reason: "vip_bonus",
+      _metadata: { plan: planId },
+    });
 
     setCurrentPlan(planId);
     setLoading(false);

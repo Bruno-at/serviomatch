@@ -53,12 +53,15 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
     if (balance < cost) { toast.error("Not enough coins!"); return; }
 
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    await Promise.all([
-      supabase.from("profiles").update({ is_boosted: true, boost_expires_at: expiresAt }).eq("user_id", user.id),
-      supabase.from("user_coins").update({ balance: balance - cost }).eq("user_id", user.id),
-    ]);
+    const { data: newBalance, error } = await supabase.rpc("adjust_coin_balance", {
+      _delta: -cost,
+      _reason: "boost_30m",
+    });
+    if (error) { toast.error("Not enough coins!"); return; }
 
-    setBalance(balance - cost);
+    await supabase.from("profiles").update({ is_boosted: true, boost_expires_at: expiresAt }).eq("user_id", user.id);
+
+    setBalance(newBalance ?? balance - cost);
     setIsBoosted(true);
     setBoostTimeLeft("30m left");
     setOpen(false);
@@ -71,12 +74,15 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
     if (balance < cost) { toast.error("Not enough coins!"); return; }
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await Promise.all([
-      supabase.from("profiles").update({ is_spotlight: true, spotlight_expires_at: expiresAt }).eq("user_id", user.id),
-      supabase.from("user_coins").update({ balance: balance - cost }).eq("user_id", user.id),
-    ]);
+    const { data: newBalance, error } = await supabase.rpc("adjust_coin_balance", {
+      _delta: -cost,
+      _reason: "spotlight_1h",
+    });
+    if (error) { toast.error("Not enough coins!"); return; }
 
-    setBalance(balance - cost);
+    await supabase.from("profiles").update({ is_spotlight: true, spotlight_expires_at: expiresAt }).eq("user_id", user.id);
+
+    setBalance(newBalance ?? balance - cost);
     setIsSpotlight(true);
     setOpen(false);
     toast.success("🌟 You're now in the Spotlight for 1 hour!");
