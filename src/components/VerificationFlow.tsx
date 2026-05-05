@@ -59,13 +59,18 @@ const VerificationFlow = ({ isVerified, onVerified }: VerificationFlowProps) => 
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-      await supabase
-        .from("profiles")
-        .update({
-          is_verified: true,
-          verification_selfie_url: urlData.publicUrl,
-        })
-        .eq("user_id", user.id);
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .update({ is_verified: true })
+          .eq("user_id", user.id),
+        supabase
+          .from("user_verifications")
+          .upsert(
+            { user_id: user.id, selfie_url: urlData.publicUrl, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          ),
+      ]);
 
       setStep("done");
       toast.success("Profile verified! ✅");

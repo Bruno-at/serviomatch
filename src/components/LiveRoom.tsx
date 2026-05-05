@@ -166,12 +166,12 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
     toast.success("Request sent! Waiting for host… ✋");
 
-    // Notify the host
-    await supabase.from("notifications").insert({
-      user_id: room.host_id,
-      type: "general",
-      title: "New join request",
-      message: "Someone wants to join your live",
+    // Notify the host (server-side validated)
+    await supabase.rpc("send_notification", {
+      _target_user_id: room.host_id,
+      _type: "general",
+      _title: "New join request",
+      _message: "Someone wants to join your live",
     });
   };
 
@@ -193,11 +193,11 @@ const LiveRoom = ({ room, hostName, hostAvatar, onLeave }: LiveRoomProps) => {
 
     // Notify requester
     if (req) {
-      await supabase.from("notifications").insert({
-        user_id: req.user_id,
-        type: "general",
-        title: action === "accepted" ? "You're in! 🎉" : "Request declined",
-        message: action === "accepted"
+      await supabase.rpc("send_notification", {
+        _target_user_id: req.user_id,
+        _type: "general",
+        _title: action === "accepted" ? "You're in! 🎉" : "Request declined",
+        _message: action === "accepted"
           ? `${hostName} accepted your request to join the live`
           : `${hostName} declined your request`,
       });
