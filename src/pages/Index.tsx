@@ -37,8 +37,29 @@ const Index = () => {
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showVIP, setShowVIP] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
+  const [likesBadge, setLikesBadge] = useState(0);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [directChat, setDirectChat] = useState<{ matchId: string; profile: Tables<"profiles"> } | null>(null);
+
+  // Track unseen likes count
+  useEffect(() => {
+    if (!user) return;
+    const refreshCount = async () => {
+      const { count } = await supabase
+        .from("likes")
+        .select("id", { count: "exact", head: true })
+        .eq("liked_id", user.id);
+      const seen = parseInt(localStorage.getItem(`likes_seen_${user.id}`) || "0", 10);
+      setLikesBadge(Math.max(0, (count || 0) - seen));
+    };
+    refreshCount();
+    const ch = supabase
+      .channel("likes-badge")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${user.id}` }, refreshCount)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
 
   // Auto-show daily rewards on first load
   useEffect(() => {
