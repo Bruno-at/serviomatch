@@ -9,6 +9,8 @@ interface BottomNavProps {
   onChallenges?: () => void;
   onLive?: () => void;
   onCrush?: () => void;
+  onLikes?: () => void;
+  likesBadge?: number;
 }
 
 const coreTabs = [
@@ -20,13 +22,14 @@ const coreTabs = [
 ];
 
 const moreTabs = [
+  { id: "likes", icon: Heart, label: "Likes You", color: "text-primary" },
   { id: "live", icon: Radio, label: "Go Live", color: "text-red-500" },
   { id: "speed", icon: Zap, label: "Speed Dating", color: "text-yellow-500" },
   { id: "crush", icon: Lock, label: "Secret Crush", color: "text-pink-500" },
   { id: "challenges", icon: Trophy, label: "Ranks & Challenges", color: "text-amber-500" },
 ];
 
-const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, onCrush, onLikes, likesBadge = 0 }: BottomNavProps) => {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const handleMoreAction = (id: string) => {
@@ -35,6 +38,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
     else if (id === "challenges" && onChallenges) onChallenges();
     else if (id === "live" && onLive) onLive();
     else if (id === "crush" && onCrush) onCrush();
+    else if (id === "likes" && onLikes) onLikes();
   };
 
   return (
