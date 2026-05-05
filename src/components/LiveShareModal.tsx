@@ -106,15 +106,19 @@ const LiveShareModal = ({ open, onClose, roomId, roomTitle, hostName }: LiveShar
 
   const shareExternal = async () => {
     const text = `Join ${hostName} live on Spark! 💕`;
+    // Some embedded/iframe contexts (e.g. preview sandboxes) block navigator.share
+    // with "Permission denied". Always fall back to copying the link instead of
+    // throwing an unhandled error.
     if (navigator.share) {
       try {
         await navigator.share({ title: roomTitle, text, url: link });
-      } catch {
-        /* user cancelled */
+        return;
+      } catch (err: any) {
+        // user cancelled OR permission denied → fall through to copy
+        if (err?.name === "AbortError") return;
       }
-    } else {
-      copyLink();
     }
+    copyLink();
   };
 
   const list = (tab === "matches" ? matches : online).filter((p) =>

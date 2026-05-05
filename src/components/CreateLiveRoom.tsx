@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Radio } from "lucide-react";
+import { ArrowLeft, Radio, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface CreateLiveRoomProps {
   onCreate: (title: string, description: string) => void;
@@ -10,6 +11,47 @@ interface CreateLiveRoomProps {
 const CreateLiveRoom = ({ onCreate, onCancel }: CreateLiveRoomProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [starting, setStarting] = useState(false);
+
+  // CRITICAL: request mic/camera *synchronously* inside the click gesture so
+  // the browser actually shows the permission prompt (otherwise the live
+  // screen ends up blank/white because getUserMedia silently fails after
+  // multiple awaits).
+  const handleStart = async () => {
+    if (!title.trim() || starting) return;
+    setStarting(true);
+
+    try {
+      // Pre-flight permission check
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error("Your browser does not support live video");
+        setStarting(false);
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      // Immediately release; LiveKit will reacquire inside the live room.
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (err: any) {
+      console.error("Live permission error:", err);
+      if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
+        toast.error("Camera & microphone access required to go live");
+      } else if (err?.name === "NotFoundError") {
+        toast.error("No camera or microphone found on this device");
+      } else if (err?.name === "NotReadableError") {
+        toast.error("Camera is already in use by another app");
+      } else {
+        toast.error("Could not access camera. Please try again.");
+      }
+      setStarting(false);
+      return;
+    }
+
+    onCreate(title.trim(), description.trim());
+  };
 
   return (
     <div className="flex h-full flex-col px-6 pt-4">
@@ -55,11 +97,18 @@ const CreateLiveRoom = ({ onCreate, onCancel }: CreateLiveRoomProps) => {
 
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => title.trim() && onCreate(title.trim(), description.trim())}
-        disabled={!title.trim()}
-        className="mt-8 w-full rounded-2xl gradient-love py-3.5 text-sm font-semibold text-primary-foreground shadow-card disabled:opacity-50"
+        onClick={handleStart}
+        disabled={!title.trim() || starting}
+        className="mt-8 w-full rounded-2xl gradient-love py-3.5 text-sm font-semibold text-primary-foreground shadow-card disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        🔴 Start Live
+        {starting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Requesting camera…
+          </>
+        ) : (
+          <>🔴 Start Live</>
+        )}
       </motion.button>
     </div>
   );
