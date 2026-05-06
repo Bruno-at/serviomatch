@@ -183,20 +183,24 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
       }
 
       // Notify the other user
-      await supabase.rpc("send_notification", {
-        _target_user_id: like.liker_id,
-        _type: "match",
-        _title: "It's a match! 💖",
-        _message: `You matched with ${myProfile?.display_name || "someone"}`,
-      }).catch(() => {});
+      try {
+        await supabase.rpc("send_notification", {
+          _target_user_id: like.liker_id,
+          _type: "match",
+          _title: "It's a match! 💖",
+          _message: `You matched with ${myProfile?.display_name || "someone"}`,
+        });
+      } catch {}
 
       // Self notification
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        type: "match",
-        title: "It's a match! 💖",
-        message: `You matched with ${like.profile?.display_name || "someone"}`,
-      }).catch(() => {});
+      try {
+        await supabase.from("notifications").insert({
+          user_id: user.id,
+          type: "match",
+          title: "It's a match! 💖",
+          message: `You matched with ${like.profile?.display_name || "someone"}`,
+        });
+      } catch {}
 
       setLikes((prev) => prev.filter((l) => l.id !== like.id));
       setMatch({
