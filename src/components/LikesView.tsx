@@ -4,6 +4,8 @@ import { Heart, Lock, Eye, Crown, Sparkles, X, MapPin, BadgeCheck, SlidersHorizo
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremium } from "@/hooks/usePremium";
+import MatchPopup from "@/components/MatchPopup";
+import { toast } from "sonner";
 
 interface LikeEntry {
   id: string;
@@ -26,6 +28,18 @@ interface LikesViewProps {
 
 type Filter = "all" | "new" | "recent";
 
+const buildQuickMessage = (name: string) => {
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const options = [
+    `Hey ${name} 👋 you look amazing!`,
+    `Hi ${name} 😊 I'd love to know you better.`,
+    `${greet} ${name} 💖 your smile caught my attention.`,
+    `Hey ${name}! ✨ So glad we matched.`,
+  ];
+  return options[Math.floor(Math.random() * options.length)];
+};
+
 const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
   const { user } = useAuth();
   const [likes, setLikes] = useState<LikeEntry[]>([]);
@@ -33,6 +47,15 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const { isPremium, isDeveloper } = usePremium();
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [match, setMatch] = useState<null | {
+    matchId: string;
+    name: string;
+    photo: string | null;
+    likerId: string;
+  }>(null);
+  const [myProfile, setMyProfile] = useState<{ display_name: string; avatar_url: string | null } | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
 
   const enrichLikes = async (rawLikes: any[]): Promise<LikeEntry[]> => {
     if (rawLikes.length === 0) return [];
@@ -48,7 +71,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         ...l,
         profile: {
           ...(p || {}),
-          distance_km: ((i + 1) * 1), // pseudo distance for display
+          distance_km: ((i + 1) * 1),
         },
       };
     });
@@ -57,22 +80,24 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchLikes = async () => {
-      const { data } = await supabase
-        .from("likes")
-        .select("*")
-        .eq("liked_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(30);
+    const fetchAll = async () => {
+      const [likesRes, meRes, dismissedRes] = await Promise.all([
+        supabase.from("likes").select("*").eq("liked_id", user.id).order("created_at", { ascending: false }).limit(60),
+        supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user.id).maybeSingle(),
+        supabase.from("swipe_history").select("swiped_id").eq("user_id", user.id).eq("direction", "left"),
+      ]);
 
-      if (data) {
-        const enriched = await enrichLikes(data);
-        setLikes(enriched);
-      }
+      const dismissedSet = new Set<string>((dismissedRes.data || []).map((d: any) => d.swiped_id));
+      setDismissed(dismissedSet);
+      setMyProfile(meRes.data || { display_name: "You", avatar_url: null });
+
+      const filtered = (likesRes.data || []).filter((l: any) => !dismissedSet.has(l.liker_id));
+      const enriched = await enrichLikes(filtered);
+      setLikes(enriched);
       setLoading(false);
     };
 
-    fetchLikes();
+    fetchAll();
 
     const channel = supabase
       .channel("likes-realtime")
@@ -81,6 +106,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${user.id}` },
         async (payload) => {
           const newLike = payload.new as any;
+          if (dismissed.has(newLike.liker_id)) return;
           const enriched = await enrichLikes([newLike]);
           setLikes((prev) => [enriched[0], ...prev.filter((l) => l.liker_id !== newLike.liker_id)]);
         }
@@ -111,13 +137,96 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
     [likes]
   );
 
+  const handleDislike = async (like: LikeEntry) => {
+    if (!user) return;
+    setLikes((prev) => prev.filter((l) => l.id !== like.id));
+    setDismissed((prev) => new Set(prev).add(like.liker_id));
+    await supabase.from("swipe_history").insert({
+      user_id: user.id,
+      swiped_id: like.liker_id,
+      direction: "left",
+    });
+  };
+
+  const handleLikeBack = async (like: LikeEntry) => {
+    if (!user || pending) return;
+    setPending(like.id);
+    try {
+      // Insert reciprocal like (idempotent-ish)
+      await supabase.from("likes").insert({
+        liker_id: user.id,
+        liked_id: like.liker_id,
+      });
+
+      // Create match (user1 < user2 ordering for consistency)
+      const [u1, u2] = [user.id, like.liker_id].sort();
+      const { data: existing } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("user1_id", u1)
+        .eq("user2_id", u2)
+        .maybeSingle();
+
+      let matchId = existing?.id;
+      if (!matchId) {
+        const { data: newMatch } = await supabase
+          .from("matches")
+          .insert({ user1_id: u1, user2_id: u2 })
+          .select("id")
+          .maybeSingle();
+        matchId = newMatch?.id;
+      }
+
+      if (!matchId) {
+        toast.error("Could not create match");
+        return;
+      }
+
+      // Notify the other user
+      await supabase.rpc("send_notification", {
+        _target_user_id: like.liker_id,
+        _type: "match",
+        _title: "It's a match! 💖",
+        _message: `You matched with ${myProfile?.display_name || "someone"}`,
+      }).catch(() => {});
+
+      // Self notification
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        type: "match",
+        title: "It's a match! 💖",
+        message: `You matched with ${like.profile?.display_name || "someone"}`,
+      }).catch(() => {});
+
+      setLikes((prev) => prev.filter((l) => l.id !== like.id));
+      setMatch({
+        matchId,
+        name: like.profile?.display_name || "Match",
+        photo: like.profile?.avatar_url || null,
+        likerId: like.liker_id,
+      });
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const handleQuickMessage = async () => {
+    if (!match || !user) return;
+    const msg = buildQuickMessage(match.name.split(" ")[0] || "");
+    await supabase.from("messages").insert({
+      match_id: match.matchId,
+      sender_id: user.id,
+      content: msg,
+    });
+    toast.success("Message sent ✨");
+    setMatch(null);
+  };
+
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-[hsl(260_40%_6%)] via-[hsl(260_30%_5%)] to-[hsl(260_30%_4%)] text-white overflow-y-auto">
-      {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_at_top,hsl(330_90%_55%/0.18),transparent_60%)]" />
 
       <div className="relative px-5 pt-6">
-        {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -156,7 +265,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
           </div>
         </div>
 
-        {/* Premium upgrade banner */}
         {!isPremium && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -168,15 +276,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
             }}
           >
             <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
-            <div className="absolute right-6 top-3 text-primary/60">
-              <Heart className="h-5 w-5 fill-primary/40" />
-            </div>
-            <div className="absolute right-12 top-10 text-primary/80">
-              <Heart className="h-7 w-7 fill-primary/60" />
-            </div>
-            <div className="absolute right-3 top-12 text-primary/50">
-              <Heart className="h-4 w-4 fill-primary/30" />
-            </div>
             <div className="relative flex items-center gap-3">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-pink-500 shadow-[0_8px_30px_-4px_hsl(25_90%_60%/0.5)]">
                 <Crown className="h-8 w-8 text-white drop-shadow" />
@@ -197,7 +296,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
           </motion.div>
         )}
 
-        {/* Filter tabs */}
         <div className="mt-5 flex items-center gap-2">
           {([
             { id: "all", label: `All ${likes.length}` },
@@ -230,7 +328,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         </div>
       </div>
 
-      {/* Grid */}
       <div className="relative px-5 pt-5 pb-32 flex-1">
         {loading ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -254,22 +351,23 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
           </motion.div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <AnimatePresence>
             {filtered.map((like, i) => (
               <motion.div
                 key={like.id}
+                layout
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => !isPremium && setShowUpgrade(true)}
-                className="group relative aspect-[3/4] cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ delay: i * 0.03 }}
+                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
               >
-                {/* Photo */}
                 {like.profile?.avatar_url ? (
                   <img
                     src={like.profile.avatar_url}
                     alt={isPremium ? like.profile.display_name : "Liked you"}
-                    className={`h-full w-full object-cover transition-all duration-500 ${
+                    onClick={() => !isPremium && setShowUpgrade(true)}
+                    className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
                       !isPremium ? "scale-110 blur-2xl" : "group-hover:scale-105"
                     }`}
                   />
@@ -277,24 +375,20 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                   <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 ${!isPremium ? "blur-xl" : ""}`} />
                 )}
 
-                {/* Dim overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 pointer-events-none" />
 
-                {/* Time badge */}
                 <div className="absolute top-2.5 right-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-md">
                   {timeAgo(like.created_at)}
                 </div>
 
-                {/* Lock icon center (free) */}
                 {!isPremium && (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="rounded-full border border-white/20 bg-white/10 p-3 backdrop-blur-md shadow-lg">
                       <Lock className="h-5 w-5 text-white/90" />
                     </div>
                   </div>
                 )}
 
-                {/* Bottom info */}
                 <div className="absolute inset-x-0 bottom-0 p-2.5">
                   <div className="flex items-center gap-1">
                     <p className="truncate text-sm font-bold text-white">
@@ -303,29 +397,36 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                     <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-primary text-white" />
                   </div>
                   <p className="text-[11px] text-white/80">
-                    {isPremium && like.profile?.age ? `${like.profile.age}` : (like.profile?.age ?? 24)}
+                    {like.profile?.age ?? 24}
                     {like.profile?.location ? `, ${like.profile.location}` : ", Kampala"}
                   </p>
-                  <div className="mt-1 flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-[10px] text-white/70">
-                      <MapPin className="h-3 w-3" />
-                      {like.profile?.distance_km ?? 1} km away
-                    </div>
+                  <div className="mt-1.5 flex items-center gap-1.5">
                     <motion.button
                       whileTap={{ scale: 0.85 }}
-                      onClick={(e) => { e.stopPropagation(); !isPremium && setShowUpgrade(true); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-primary/60 bg-primary/15 backdrop-blur-md"
+                      onClick={(e) => { e.stopPropagation(); handleDislike(like); }}
+                      className="flex h-9 flex-1 items-center justify-center rounded-full border border-white/15 bg-black/50 backdrop-blur-md transition hover:bg-black/70"
+                      aria-label="Dislike"
                     >
-                      <Heart className="h-3.5 w-3.5 fill-primary text-primary" />
+                      <X className="h-4 w-4 text-white/90" />
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      disabled={pending === like.id}
+                      onClick={(e) => { e.stopPropagation(); handleLikeBack(like); }}
+                      className="flex h-9 flex-[1.4] items-center justify-center gap-1 rounded-full gradient-love shadow-[0_6px_20px_-6px_hsl(350_80%_60%/0.7)] disabled:opacity-60"
+                      aria-label="Like back"
+                    >
+                      <Heart className="h-4 w-4 fill-white text-white" />
+                      <span className="text-[11px] font-bold text-white">Like</span>
                     </motion.button>
                   </div>
                 </div>
               </motion.div>
             ))}
+            </AnimatePresence>
           </div>
         )}
 
-        {/* Bottom CTA */}
         {!isPremium && filtered.length > 0 && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
@@ -348,7 +449,17 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         )}
       </div>
 
-      {/* Upgrade Modal */}
+      {/* Match popup */}
+      <MatchPopup
+        open={!!match}
+        myName={myProfile?.display_name || "You"}
+        myPhoto={myProfile?.avatar_url || null}
+        matchName={match?.name || ""}
+        matchPhoto={match?.photo || null}
+        onChat={handleQuickMessage}
+        onClose={() => setMatch(null)}
+      />
+
       <AnimatePresence>
         {showUpgrade && (
           <>
