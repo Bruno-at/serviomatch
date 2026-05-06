@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Lock, Eye, Crown, Sparkles, X, MapPin, BadgeCheck, SlidersHorizontal, Gem, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePremium } from "@/hooks/usePremium";
 
 interface LikeEntry {
   id: string;
