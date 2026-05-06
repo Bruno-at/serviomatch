@@ -120,11 +120,16 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-[34px] font-bold font-display leading-none tracking-tight">Likes You</h1>
               <span className="flex items-center gap-1 rounded-full gradient-love px-2.5 py-1 text-xs font-bold shadow-[0_4px_20px_-4px_hsl(350_80%_60%/0.6)]">
                 <Heart className="h-3 w-3 fill-white" /> {likes.length}
               </span>
+              {isDeveloper && (
+                <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-black shadow-[0_4px_20px_-4px_hsl(30_90%_55%/0.6)]">
+                  <Crown className="h-3 w-3" /> Developer
+                </span>
+              )}
             </div>
             <p className="mt-1.5 text-sm text-white/60">
               <span className="text-primary font-semibold">{likes.length}</span> people liked your profile
