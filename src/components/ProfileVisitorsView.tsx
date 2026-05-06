@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Eye, Lock, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePremium } from "@/hooks/usePremium";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Visitor {
