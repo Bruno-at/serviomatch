@@ -22,7 +22,7 @@ const ProfileVisitorsView = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const isPremium = false; // TODO: integrate with premium system
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (!user) return;
