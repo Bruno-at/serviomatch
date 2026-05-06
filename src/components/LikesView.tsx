@@ -32,7 +32,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const isPremium = false;
+  const { isPremium, isDeveloper } = usePremium();
 
   const enrichLikes = async (rawLikes: any[]): Promise<LikeEntry[]> => {
     if (rawLikes.length === 0) return [];
