@@ -37,7 +37,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
     const likerIds = rawLikes.map((l) => l.liker_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url, age, city")
+      .select("user_id, display_name, avatar_url, age, location")
       .in("user_id", likerIds);
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
     return rawLikes.map((l, i) => {
