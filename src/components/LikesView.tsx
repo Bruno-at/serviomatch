@@ -13,6 +13,7 @@ interface LikeEntry {
     avatar_url: string | null;
     age: number | null;
     city?: string | null;
+    location?: string | null;
     distance_km?: number | null;
   };
 }
