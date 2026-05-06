@@ -298,7 +298,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                   </div>
                   <p className="text-[11px] text-white/80">
                     {isPremium && like.profile?.age ? `${like.profile.age}` : (like.profile?.age ?? 24)}
-                    {like.profile?.city ? `, ${like.profile.city}` : ", Kampala"}
+                    {like.profile?.location ? `, ${like.profile.location}` : ", Kampala"}
                   </p>
                   <div className="mt-1 flex items-center justify-between">
                     <div className="flex items-center gap-1 text-[10px] text-white/70">
