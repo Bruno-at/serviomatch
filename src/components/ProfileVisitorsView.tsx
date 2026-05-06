@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Eye, Lock, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePremium } from "@/hooks/usePremium";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Visitor {
@@ -21,7 +22,7 @@ const ProfileVisitorsView = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const isPremium = false; // TODO: integrate with premium system
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (!user) return;
