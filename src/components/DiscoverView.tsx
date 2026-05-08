@@ -69,15 +69,20 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
       const excludeIds = [user.id, ...(likedData?.map((l) => l.liked_id) || []), ...(blockedData?.map((b: any) => b.blocked_id) || [])];
 
-      let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(20);
+      let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(40);
 
-      // Apply filter-specific queries
-      if (activeFilter === "trending") {
-        query = query.or("is_boosted.eq.true,is_spotlight.eq.true");
-      } else if (activeFilter === "new") {
-        query = query.order("created_at", { ascending: false });
-      } else if (activeFilter === "spotlight") {
-        query = query.eq("is_spotlight", true);
+      // Age range filter (when profiles store age as int)
+      query = query.gte("age", filters.ageRange[0]).lte("age", filters.ageRange[1]);
+
+      // Gender preference
+      if (filters.gender !== "all") {
+        query = query.eq("gender", filters.gender);
+      }
+
+      // Online only (best-effort: requires last_seen / is_online column; ignored if absent)
+      if (filters.onlineOnly) {
+        const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        query = query.gte("last_seen", since);
       }
 
       const { data } = await query;
