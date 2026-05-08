@@ -251,63 +251,128 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-2 border-b border-border/40">
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold font-display tracking-tight text-foreground leading-none">
-            Spark<span className="text-primary">.</span>
+          <h1 className="text-3xl font-bold font-display tracking-tight text-foreground leading-none">
+            Discover
           </h1>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            {activeFilter === "all"
-              ? "Curated for you"
-              : filterOptions.find((f) => f.key === activeFilter)?.label}
+          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            People near you
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {lastSwiped && (
-            <motion.button whileTap={{ scale: 0.9 }} onClick={handleUndo}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleUndo}
+              className="flex items-center justify-center rounded-full bg-muted h-10 w-10 hover:bg-muted/70 transition-colors"
+              aria-label="Undo last swipe"
+            >
               <Undo2 className="h-4 w-4 text-primary" />
             </motion.button>
           )}
-          {onShowFavorites && (
-            <motion.button whileTap={{ scale: 0.9 }} onClick={onShowFavorites}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
-              <Star className="h-4 w-4 text-yellow-500" />
-            </motion.button>
-          )}
-          {onShowBookmarks && (
-            <motion.button whileTap={{ scale: 0.9 }} onClick={onShowBookmarks}
-              className="flex items-center justify-center rounded-full bg-muted h-9 w-9 hover:bg-muted/70 transition-colors">
-              <Bookmark className="h-4 w-4 text-accent" />
-            </motion.button>
-          )}
-          <BoostSpotlight compact />
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => { setDraftFilters(filters); setShowFilters(true); }}
+            className="flex items-center gap-1.5 rounded-full bg-foreground text-background h-10 px-4 hover:opacity-90 transition-opacity shadow-sm"
+            aria-label="Filters"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="text-xs font-semibold">Filters</span>
+          </motion.button>
         </div>
       </div>
 
-      {/* Filter chips - horizontal scroll */}
-      <div className="px-4 py-3">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          {filterOptions.map((f) => {
-            const Icon = f.icon;
-            const isActive = activeFilter === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-all border ${
-                  isActive
-                    ? "bg-foreground text-background border-foreground shadow-sm"
-                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground"
-                }`}
-              >
-                {Icon && <Icon className="h-3 w-3" />}
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Filters dialog */}
+      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+            <DialogDescription>Tune your discovery feed.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-2">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold">Distance</label>
+                <span className="text-xs text-muted-foreground">{draftFilters.maxDistance} km</span>
+              </div>
+              <Slider
+                value={[draftFilters.maxDistance]}
+                onValueChange={(v) => setDraftFilters((f) => ({ ...f, maxDistance: v[0] }))}
+                min={1} max={100} step={1}
+              />
+              <div className="flex gap-2 mt-3">
+                {[1, 5, 10, 50].map((km) => (
+                  <button
+                    key={km}
+                    onClick={() => setDraftFilters((f) => ({ ...f, maxDistance: km }))}
+                    className={`flex-1 rounded-full py-1.5 text-xs font-semibold border transition-all ${
+                      draftFilters.maxDistance === km
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+                    }`}
+                  >
+                    {km} km
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold">Age range</label>
+                <span className="text-xs text-muted-foreground">
+                  {draftFilters.ageRange[0]} – {draftFilters.ageRange[1]}
+                </span>
+              </div>
+              <Slider
+                value={draftFilters.ageRange}
+                onValueChange={(v) => setDraftFilters((f) => ({ ...f, ageRange: [v[0], v[1]] as [number, number] }))}
+                min={18} max={70} step={1}
+                minStepsBetweenThumbs={1}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold mb-2 block">Show me</label>
+              <div className="grid grid-cols-4 gap-2">
+                {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
+                    className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
+                      draftFilters.gender === g
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Online only</p>
+                <p className="text-xs text-muted-foreground">Show only active users</p>
+              </div>
+              <Switch
+                checked={draftFilters.onlineOnly}
+                onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDraftFilters(DEFAULT_FILTERS)}>
+              Reset
+            </Button>
+            <Button className="flex-1" onClick={() => { setFilters(draftFilters); setShowFilters(false); }}>
+              Apply
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Card stack area */}
       <div className="relative mx-4 flex-1 mb-4">
