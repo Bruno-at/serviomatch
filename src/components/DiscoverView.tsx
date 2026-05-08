@@ -50,7 +50,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
   const [lastSwiped, setLastSwiped] = useState<{ profile: Tables<"profiles">; direction: string } | null>(null);
   const [undoCount, setUndoCount] = useState(0);
-  const [activeFilter, setActiveFilter] = useState<DiscoverFilter>("all");
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const MAX_FREE_UNDOS = 3;
 
