@@ -104,7 +104,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       setLoading(false);
     };
     fetchData();
-  }, [user, activeFilter]);
+  }, [user, filters]);
 
   const currentProfile = profiles[currentIndex];
 
