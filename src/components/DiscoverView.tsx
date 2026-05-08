@@ -393,9 +393,13 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                     id: profile.id,
                     name: profile.display_name,
                     age: profile.age || 0,
-                    distance: profile.location || "Nearby",
+                    distance: "Nearby",
+                    location: profile.location || undefined,
                     bio: profile.bio || "",
-                    image: profile.avatar_url || "",
+                    image: profile.avatar_url || (profile.photos?.[0] ?? ""),
+                    photos: (profile.photos && profile.photos.length > 0)
+                      ? profile.photos
+                      : (profile.avatar_url ? [profile.avatar_url] : []),
                     interests: profile.interests || [],
                     prompts: [],
                     verified: !!profile.is_verified,
