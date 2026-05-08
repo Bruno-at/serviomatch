@@ -10,6 +10,8 @@ export interface Profile {
   distance: string;
   bio: string;
   image: string;
+  photos?: string[];
+  location?: string;
   interests: string[];
   prompts: { question: string; answer: string }[];
   verified: boolean;
