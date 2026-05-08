@@ -71,18 +71,12 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
       let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(40);
 
-      // Age range filter (when profiles store age as int)
+      // Age range filter
       query = query.gte("age", filters.ageRange[0]).lte("age", filters.ageRange[1]);
 
-      // Gender preference
-      if (filters.gender !== "all") {
-        query = query.eq("gender", filters.gender);
-      }
-
-      // Online only (best-effort: requires last_seen / is_online column; ignored if absent)
+      // Online only
       if (filters.onlineOnly) {
-        const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-        query = query.gte("last_seen", since);
+        query = query.eq("is_online", true);
       }
 
       const { data } = await query;
