@@ -40,9 +40,9 @@ const VirtualGifts = ({ receiverId, matchId, onGiftSent }: VirtualGiftsProps) =>
         if (coinData) {
           setBalance(coinData.balance);
         } else {
-          await supabase.from("user_coins").insert({ user_id: user.id, balance: 100 });
-          setBalance(100);
+          setBalance(0);
         }
+
       }
     };
     fetchData();
