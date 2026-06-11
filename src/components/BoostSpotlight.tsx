@@ -26,10 +26,6 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
       ]);
 
       if (coinData) setBalance(coinData.balance);
-      else {
-        await supabase.from("user_coins").insert({ user_id: user.id, balance: 100 });
-        setBalance(100);
-      }
 
       if (profile) {
         const now = new Date();
@@ -49,19 +45,9 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
 
   const activateBoost = async () => {
     if (!user) return;
-    const cost = 30;
-    if (balance < cost) { toast.error("Not enough coins!"); return; }
-
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const { data: newBalance, error } = await supabase.rpc("adjust_coin_balance", {
-      _delta: -cost,
-      _reason: "boost_30m",
-    });
-    if (error) { toast.error("Not enough coins!"); return; }
-
-    await supabase.from("profiles").update({ is_boosted: true, boost_expires_at: expiresAt }).eq("user_id", user.id);
-
-    setBalance(newBalance ?? balance - cost);
+    const { error } = await supabase.rpc("activate_boost" as any);
+    if (error) { toast.error(error.message || "Could not activate boost"); return; }
+    setBalance((b) => Math.max(0, b - 30));
     setIsBoosted(true);
     setBoostTimeLeft("30m left");
     setOpen(false);
@@ -70,23 +56,14 @@ const BoostSpotlight = ({ compact }: BoostSpotlightProps) => {
 
   const activateSpotlight = async () => {
     if (!user) return;
-    const cost = 50;
-    if (balance < cost) { toast.error("Not enough coins!"); return; }
-
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    const { data: newBalance, error } = await supabase.rpc("adjust_coin_balance", {
-      _delta: -cost,
-      _reason: "spotlight_1h",
-    });
-    if (error) { toast.error("Not enough coins!"); return; }
-
-    await supabase.from("profiles").update({ is_spotlight: true, spotlight_expires_at: expiresAt }).eq("user_id", user.id);
-
-    setBalance(newBalance ?? balance - cost);
+    const { error } = await supabase.rpc("activate_spotlight" as any);
+    if (error) { toast.error(error.message || "Could not activate spotlight"); return; }
+    setBalance((b) => Math.max(0, b - 50));
     setIsSpotlight(true);
     setOpen(false);
     toast.success("🌟 You're now in the Spotlight for 1 hour!");
   };
+
 
   if (compact) {
     return (

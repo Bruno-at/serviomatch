@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Developer override email — grants permanent PRO access
-const DEV_EMAIL = "brunog0745090566@mail.com";
-
-export type PremiumTier = "free" | "pro" | "developer";
+export type PremiumTier = "free" | "pro";
 
 interface PremiumState {
   isPremium: boolean;
@@ -27,12 +24,6 @@ export const usePremium = (): PremiumState => {
     if (authLoading) return;
     if (!user) {
       setState({ isPremium: false, tier: "free", isDeveloper: false, loading: false });
-      return;
-    }
-
-    // Developer override (matched against authenticated email only)
-    if (user.email?.toLowerCase() === DEV_EMAIL.toLowerCase()) {
-      setState({ isPremium: true, tier: "developer", isDeveloper: true, loading: false });
       return;
     }
 

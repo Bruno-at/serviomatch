@@ -195,7 +195,7 @@ const SecretCrushView = ({ onBack, onViewProfile, onNavigateToChat }: SecretCrus
       if (reverse) {
         await supabase.from("secret_crushes").update({ is_mutual: true }).eq("id", crush.id);
         await supabase.from("secret_crushes").update({ is_mutual: true }).eq("id", reverse.id);
-        await supabase.from("matches").insert({ user1_id: user.id, user2_id: crush.crushed_id });
+        await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: crush.crushed_id });
         toast.success("💖 Your Secret Crush has been revealed!");
       }
     }
@@ -240,7 +240,7 @@ const SecretCrushView = ({ onBack, onViewProfile, onNavigateToChat }: SecretCrus
     if (reverse) {
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", user.id).eq("crushed_id", profile.user_id);
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", profile.user_id).eq("crushed_id", user.id);
-      await supabase.from("matches").insert({ user1_id: user.id, user2_id: profile.user_id });
+      await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: profile.user_id });
       setMutualPopup(profile);
       toast.success("It's a Secret Match! 💖");
     } else {

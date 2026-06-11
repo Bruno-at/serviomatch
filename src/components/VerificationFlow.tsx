@@ -59,18 +59,14 @@ const VerificationFlow = ({ isVerified, onVerified }: VerificationFlowProps) => 
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .update({ is_verified: true })
-          .eq("user_id", user.id),
-        supabase
-          .from("user_verifications")
-          .upsert(
-            { user_id: user.id, selfie_url: urlData.publicUrl, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          ),
-      ]);
+      const { error: rpcErr } = await supabase.rpc("submit_verification" as any, {
+        _selfie_url: urlData.publicUrl,
+      });
+      if (rpcErr) {
+        toast.error("Verification failed");
+        setStep("intro");
+        return;
+      }
 
       setStep("done");
       toast.success("Profile verified! ✅");
@@ -79,6 +75,7 @@ const VerificationFlow = ({ isVerified, onVerified }: VerificationFlowProps) => 
       setTimeout(() => setOpen(false), 2000);
     }, "image/jpeg", 0.85);
   }, [user, stopCamera, onVerified]);
+
 
   const handleClose = () => {
     stopCamera();
