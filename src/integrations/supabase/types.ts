@@ -1000,9 +1000,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_boost: { Args: never; Returns: string }
+      activate_spotlight: { Args: never; Returns: string }
       adjust_coin_balance: {
         Args: { _delta: number; _metadata?: Json; _reason: string }
         Returns: number
+      }
+      claim_daily_reward: {
+        Args: never
+        Returns: {
+          coin_reward: number
+          day_index: number
+          streak_count: number
+        }[]
+      }
+      create_match_if_mutual: {
+        Args: { _other_user_id: string }
+        Returns: string
       }
       get_my_coordinates: {
         Args: never
@@ -1020,6 +1034,7 @@ export type Database = {
         }
         Returns: string
       }
+      submit_verification: { Args: { _selfie_url: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
