@@ -1004,6 +1004,13 @@ export type Database = {
         Args: { _delta: number; _metadata?: Json; _reason: string }
         Returns: number
       }
+      get_my_coordinates: {
+        Args: never
+        Returns: {
+          latitude: number
+          longitude: number
+        }[]
+      }
       send_notification: {
         Args: {
           _message: string
