@@ -126,9 +126,9 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       const { data: mutual } = await supabase.from("likes").select("id")
         .eq("liker_id", currentProfile.user_id).eq("liked_id", user.id).maybeSingle();
       if (mutual) {
-        const [u1, u2] = [user.id, currentProfile.user_id].sort();
-        const { data: matchData } = await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 }).select().single();
-        setMatchPopup({ matchId: matchData?.id || "", matchName: currentProfile.display_name, matchPhoto: currentProfile.avatar_url });
+        const { data: matchId } = await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: currentProfile.user_id });
+        setMatchPopup({ matchId: (matchId as any) || "", matchName: currentProfile.display_name, matchPhoto: currentProfile.avatar_url });
+
       } else {
         toast.success(`You liked ${currentProfile.display_name}! 💕`, { duration: 1500 });
       }
@@ -238,8 +238,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     if (reverse) {
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", user.id).eq("crushed_id", currentProfile.user_id);
       await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id);
-      const [u1, u2] = [user.id, currentProfile.user_id].sort();
-      await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
+      await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: currentProfile.user_id });
+
       toast.success("💖 It's a Secret Match!");
     } else {
       toast.success(`💖🔒 Added ${currentProfile.display_name} as a secret crush`);

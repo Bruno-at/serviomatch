@@ -78,8 +78,8 @@ const SpeedDating = ({ onBack }: { onBack: () => void }) => {
       .maybeSingle();
 
     if (mutual) {
-      const [u1, u2] = [user.id, partner.user_id].sort();
-      await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
+      await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: partner.user_id });
+
       toast.success(`🎉 It's a match with ${partner.display_name}!`);
     } else {
       toast.success(`💕 You liked ${partner.display_name}!`);

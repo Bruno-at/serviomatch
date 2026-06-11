@@ -60,36 +60,23 @@ const DailyRewards = ({ open, onClose }: DailyRewardsProps) => {
     if (!user || claiming) return;
     setClaiming(true);
 
-    const newStreak = streakCount + 1;
-    const dayIndex = ((newStreak - 1) % 7);
-    const reward = DAY_REWARDS[dayIndex];
-
-    // Upsert daily rewards
-    await supabase.from("daily_rewards").upsert(
-      {
-        user_id: user.id,
-        last_claim_date: new Date().toISOString().split("T")[0],
-        streak_count: newStreak,
-        total_claims: newStreak,
-      },
-      { onConflict: "user_id" }
-    );
-
-    // Give coins
-    const coinReward = dayIndex === 0 ? 10 : dayIndex === 2 ? 20 : dayIndex === 4 ? 30 : dayIndex === 6 ? 100 : 0;
-    if (coinReward > 0) {
-      await supabase.rpc("adjust_coin_balance", {
-        _delta: coinReward,
-        _reason: "daily_reward",
-        _metadata: { day: dayIndex + 1 },
-      });
+    const { data, error } = await supabase.rpc("claim_daily_reward" as any);
+    if (error) {
+      toast.error(error.message || "Could not claim reward");
+      setClaiming(false);
+      return;
     }
+    const row: any = Array.isArray(data) ? data[0] : data;
+    const newStreak = row?.streak_count ?? streakCount + 1;
+    const dayIdx = row?.day_index ?? ((newStreak - 1) % 7);
+    const reward = DAY_REWARDS[dayIdx];
 
     setStreakCount(newStreak);
     setCanClaim(false);
     setClaiming(false);
-    toast.success(`${reward.emoji} Day ${dayIndex + 1}: ${reward.reward} claimed!`);
+    toast.success(`${reward.emoji} Day ${dayIdx + 1}: ${reward.reward} claimed!`);
   };
+
 
   if (!open) return null;
 

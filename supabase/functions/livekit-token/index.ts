@@ -92,12 +92,43 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     const { room_id } = await req.json();
-    if (!room_id) {
+    if (!room_id || typeof room_id !== "string") {
       return new Response(JSON.stringify({ error: "room_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Authorization: only host or accepted join request
+    const { data: room } = await supabase
+      .from("live_rooms")
+      .select("host_id, is_active")
+      .eq("id", room_id)
+      .maybeSingle();
+
+    if (!room || !room.is_active) {
+      return new Response(JSON.stringify({ error: "Room not available" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (room.host_id !== userId) {
+      const { data: joinReq } = await supabase
+        .from("live_join_requests")
+        .select("status")
+        .eq("room_id", room_id)
+        .eq("user_id", userId)
+        .eq("status", "accepted")
+        .maybeSingle();
+      if (!joinReq) {
+        return new Response(JSON.stringify({ error: "Not authorized to join this room" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
 
     // Get user display name
     const { data: profile } = await supabase

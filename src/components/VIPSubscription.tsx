@@ -82,28 +82,10 @@ const VIPSubscription = ({ onBack }: VIPSubscriptionProps) => {
     const expires = new Date();
     expires.setMonth(expires.getMonth() + 1);
 
-    await supabase.from("subscriptions").upsert(
-      {
-        user_id: user.id,
-        plan: planId,
-        started_at: new Date().toISOString(),
-        expires_at: expires.toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
-
-    // Give bonus coins
-    const bonus = planId === "gold" ? 200 : 500;
-    await supabase.rpc("adjust_coin_balance", {
-      _delta: bonus,
-      _reason: "vip_bonus",
-      _metadata: { plan: planId },
-    });
-
-    setCurrentPlan(planId);
+    toast.info("Subscriptions must be purchased through the in-app payment flow. Please contact support to activate a paid plan.");
     setLoading(false);
-    toast.success(`🎉 Welcome to ${planId === "gold" ? "Gold" : "Platinum"}! +${bonus} bonus coins`);
   };
+
 
   return (
     <div className="flex h-full flex-col">
