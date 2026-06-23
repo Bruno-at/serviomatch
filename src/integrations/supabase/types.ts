@@ -605,18 +605,26 @@ export type Database = {
           bio: string | null
           boost_expires_at: string | null
           created_at: string
+          date_of_birth: string | null
+          dating_intents: string[] | null
           display_name: string
+          first_name: string | null
+          gender: string | null
           id: string
           interests: string[] | null
           is_boosted: boolean | null
           is_online: boolean | null
           is_spotlight: boolean | null
           is_verified: boolean | null
+          last_name: string | null
           last_online: string | null
           latitude: number | null
           location: string | null
           longitude: number | null
+          looking_for: string | null
+          onboarding_completed: boolean
           personality_answers: Json | null
+          photo_verification_pending: boolean
           photos: string[] | null
           spotlight_expires_at: string | null
           updated_at: string
@@ -631,18 +639,26 @@ export type Database = {
           bio?: string | null
           boost_expires_at?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          dating_intents?: string[] | null
           display_name?: string
+          first_name?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_boosted?: boolean | null
           is_online?: boolean | null
           is_spotlight?: boolean | null
           is_verified?: boolean | null
+          last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          looking_for?: string | null
+          onboarding_completed?: boolean
           personality_answers?: Json | null
+          photo_verification_pending?: boolean
           photos?: string[] | null
           spotlight_expires_at?: string | null
           updated_at?: string
@@ -657,18 +673,26 @@ export type Database = {
           bio?: string | null
           boost_expires_at?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          dating_intents?: string[] | null
           display_name?: string
+          first_name?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_boosted?: boolean | null
           is_online?: boolean | null
           is_spotlight?: boolean | null
           is_verified?: boolean | null
+          last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          looking_for?: string | null
+          onboarding_completed?: boolean
           personality_answers?: Json | null
+          photo_verification_pending?: boolean
           photos?: string[] | null
           spotlight_expires_at?: string | null
           updated_at?: string
