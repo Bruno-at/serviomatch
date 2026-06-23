@@ -10,7 +10,7 @@ import MessagesView from "@/components/MessagesView";
 import ProfileView from "@/components/ProfileView";
 import ProfileVisitorsView from "@/components/ProfileVisitorsView";
 import SavedProfilesView from "@/components/SavedProfilesView";
-import PhotoUploadOnboarding from "@/components/PhotoUploadOnboarding";
+import Onboarding from "./Onboarding";
 import ChatView from "@/components/ChatView";
 import SpeedDating from "@/components/SpeedDating";
 import ChallengesView from "@/components/ChallengesView";
@@ -73,12 +73,14 @@ const Index = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setNeedsOnboarding(null); return; }
     const checkOnboarding = async () => {
-      const { data } = await supabase.from("profiles").select("photos, avatar_url").eq("user_id", user.id).maybeSingle();
-      const hasPhotos = data?.photos && (data.photos as string[]).length > 0;
-      const hasAvatar = !!data?.avatar_url;
-      setNeedsOnboarding(!hasPhotos && !hasAvatar);
+      const { data } = await supabase.from("profiles")
+        .select("onboarding_completed, photos, avatar_url")
+        .eq("user_id", user.id).maybeSingle();
+      // @ts-ignore - column added in latest migration
+      const done = !!data?.onboarding_completed;
+      setNeedsOnboarding(!done);
     };
     checkOnboarding();
   }, [user]);
@@ -86,12 +88,12 @@ const Index = () => {
   if (loading) {
     return <div className="flex h-dvh items-center justify-center bg-background"><p className="text-sm text-muted-foreground">Loading...</p></div>;
   }
-  if (!user) return <Auth />;
+  if (!user) return <Onboarding onComplete={() => setNeedsOnboarding(false)} />;
   if (needsOnboarding === null) {
     return <div className="flex h-dvh items-center justify-center bg-background"><p className="text-sm text-muted-foreground">Loading...</p></div>;
   }
   if (needsOnboarding) {
-    return <PhotoUploadOnboarding onComplete={() => setNeedsOnboarding(false)} />;
+    return <Onboarding onComplete={() => setNeedsOnboarding(false)} />;
   }
 
   const handleNavigate = (tab: string) => {
