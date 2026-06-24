@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, Undo2, SlidersHorizontal } from "lucide-react";
+import { Sparkles, SlidersHorizontal, ChevronDown } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
