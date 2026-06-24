@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, Undo2, SlidersHorizontal } from "lucide-react";
+import { Sparkles, SlidersHorizontal, ChevronDown } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
@@ -261,16 +261,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {lastSwiped && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleUndo}
-              className="flex items-center justify-center rounded-full bg-muted h-10 w-10 hover:bg-muted/70 transition-colors"
-              aria-label="Undo last swipe"
-            >
-              <Undo2 className="h-4 w-4 text-primary" />
-            </motion.button>
-          )}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => { setDraftFilters(filters); setShowFilters(true); }}
@@ -333,35 +323,42 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
               />
             </div>
 
-            <div>
-              <label className="text-sm font-semibold mb-2 block">Show me</label>
-              <div className="grid grid-cols-4 gap-2">
-                {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
-                    className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
-                      draftFilters.gender === g
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
+            <details className="group rounded-xl border border-border bg-muted/30">
+              <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-sm font-semibold list-none">
+                Advanced filters
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-4 px-3 pb-3 pt-1">
+                <div>
+                  <label className="text-xs font-semibold mb-2 block text-muted-foreground">Show me</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
+                        className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
+                          draftFilters.gender === g
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Online only</p>
+                    <p className="text-xs text-muted-foreground">Show only active users</p>
+                  </div>
+                  <Switch
+                    checked={draftFilters.onlineOnly}
+                    onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">Online only</p>
-                <p className="text-xs text-muted-foreground">Show only active users</p>
-              </div>
-              <Switch
-                checked={draftFilters.onlineOnly}
-                onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
-              />
-            </div>
+            </details>
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => setDraftFilters(DEFAULT_FILTERS)}>
@@ -386,7 +383,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         ) : (
           <AnimatePresence>
             {remaining.length > 0 ? (
-              remaining.map((profile, i) => (
+              remaining.map((profile, i) => {
+                const intents = (profile as any).dating_intents as string[] | null;
+                const intent = intents?.[0] || (profile as any).looking_for || undefined;
+                const country = profile.location?.split(",").pop()?.trim();
+                return (
                 <ProfileCard
                   key={profile.id}
                   profile={{
@@ -395,6 +396,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                     age: profile.age || 0,
                     distance: "Nearby",
                     location: profile.location || undefined,
+                    country,
+                    intent,
                     bio: profile.bio || "",
                     image: profile.avatar_url || (profile.photos?.[0] ?? ""),
                     photos: (profile.photos && profile.photos.length > 0)
@@ -407,18 +410,13 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                   isTop={i === 0}
                   onSwipeLeft={() => handleSwipe("left")}
                   onSwipeRight={() => handleSwipe("right")}
-                  onSuperLike={handleSuperLike}
-                  onFavorite={handleFavorite}
-                  onBookmark={handleBookmark}
+                  onUndo={handleUndo}
+                  canUndo={!!lastSwiped && undoCount < MAX_FREE_UNDOS}
                   onWave={handleWave}
-                  onBoost={handleBoost}
                   onCompliment={handleCompliment}
-                  onCompatibility={handleCompatibility}
-                  onShare={handleShare}
-                  onReport={handleReport}
-                  onSecretCrush={handleSecretCrush}
                 />
-              )).reverse()
+                );
+              }).reverse()
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex h-full flex-col items-center justify-center text-center">

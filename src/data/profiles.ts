@@ -12,6 +12,8 @@ export interface Profile {
   image: string;
   photos?: string[];
   location?: string;
+  country?: string;
+  intent?: string;
   interests: string[];
   prompts: { question: string; answer: string }[];
   verified: boolean;
@@ -71,3 +73,16 @@ export const profiles: Profile[] = [
     verified: true,
   },
 ];
+
+const FLAG_MAP: Record<string, string> = {
+  uganda: "🇺🇬", kenya: "🇰🇪", nigeria: "🇳🇬", "south africa": "🇿🇦",
+  ghana: "🇬🇭", tanzania: "🇹🇿", rwanda: "🇷🇼", ethiopia: "🇪🇹",
+  egypt: "🇪🇬", morocco: "🇲🇦", senegal: "🇸🇳", zambia: "🇿🇲",
+  zimbabwe: "🇿🇼", cameroon: "🇨🇲", "ivory coast": "🇨🇮", angola: "🇦🇴",
+  mozambique: "🇲🇿", malawi: "🇲🇼", botswana: "🇧🇼", namibia: "🇳🇦",
+};
+
+export function countryFlag(country?: string | null): string | null {
+  if (!country) return null;
+  return FLAG_MAP[country.trim().toLowerCase()] || null;
+}
