@@ -383,7 +383,11 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         ) : (
           <AnimatePresence>
             {remaining.length > 0 ? (
-              remaining.map((profile, i) => (
+              remaining.map((profile, i) => {
+                const intents = (profile as any).dating_intents as string[] | null;
+                const intent = intents?.[0] || (profile as any).looking_for || undefined;
+                const country = profile.location?.split(",").pop()?.trim();
+                return (
                 <ProfileCard
                   key={profile.id}
                   profile={{
@@ -392,6 +396,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                     age: profile.age || 0,
                     distance: "Nearby",
                     location: profile.location || undefined,
+                    country,
+                    intent,
                     bio: profile.bio || "",
                     image: profile.avatar_url || (profile.photos?.[0] ?? ""),
                     photos: (profile.photos && profile.photos.length > 0)
@@ -404,18 +410,13 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                   isTop={i === 0}
                   onSwipeLeft={() => handleSwipe("left")}
                   onSwipeRight={() => handleSwipe("right")}
-                  onSuperLike={handleSuperLike}
-                  onFavorite={handleFavorite}
-                  onBookmark={handleBookmark}
+                  onUndo={handleUndo}
+                  canUndo={!!lastSwiped && undoCount < MAX_FREE_UNDOS}
                   onWave={handleWave}
-                  onBoost={handleBoost}
                   onCompliment={handleCompliment}
-                  onCompatibility={handleCompatibility}
-                  onShare={handleShare}
-                  onReport={handleReport}
-                  onSecretCrush={handleSecretCrush}
                 />
-              )).reverse()
+                );
+              }).reverse()
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex h-full flex-col items-center justify-center text-center">
