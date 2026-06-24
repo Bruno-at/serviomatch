@@ -154,12 +154,18 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       toast.error("Free undos used up! Upgrade to Premium for unlimited undos ✨");
       return;
     }
-    await supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", lastSwiped.profile.user_id);
-    await supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", lastSwiped.profile.user_id);
+    const target = lastSwiped.profile.user_id;
+    // Reverse all side-effects of the last swipe so history stays clean
+    await Promise.all([
+      supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", target),
+      supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", target),
+      supabase.from("bookmarks").delete().eq("user_id", user.id).eq("bookmarked_id", target),
+      supabase.from("swipe_history").delete().eq("user_id", user.id).eq("swiped_id", target),
+    ]);
     setCurrentIndex((prev) => Math.max(0, prev - 1));
     setUndoCount((prev) => prev + 1);
     setLastSwiped(null);
-    toast.success(`↩️ Undo! (${MAX_FREE_UNDOS - undoCount - 1} left)`);
+    toast.success(`↩️ Brought back ${lastSwiped.profile.display_name} (${MAX_FREE_UNDOS - undoCount - 1} left)`);
   }, [lastSwiped, user, undoCount]);
 
   const handleFavorite = useCallback(async () => {
