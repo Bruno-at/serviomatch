@@ -323,35 +323,42 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
               />
             </div>
 
-            <div>
-              <label className="text-sm font-semibold mb-2 block">Show me</label>
-              <div className="grid grid-cols-4 gap-2">
-                {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
-                    className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
-                      draftFilters.gender === g
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
+            <details className="group rounded-xl border border-border bg-muted/30">
+              <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-sm font-semibold list-none">
+                Advanced filters
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-4 px-3 pb-3 pt-1">
+                <div>
+                  <label className="text-xs font-semibold mb-2 block text-muted-foreground">Show me</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
+                        className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
+                          draftFilters.gender === g
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Online only</p>
+                    <p className="text-xs text-muted-foreground">Show only active users</p>
+                  </div>
+                  <Switch
+                    checked={draftFilters.onlineOnly}
+                    onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">Online only</p>
-                <p className="text-xs text-muted-foreground">Show only active users</p>
-              </div>
-              <Switch
-                checked={draftFilters.onlineOnly}
-                onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
-              />
-            </div>
+            </details>
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => setDraftFilters(DEFAULT_FILTERS)}>
