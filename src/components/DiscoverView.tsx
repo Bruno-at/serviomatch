@@ -261,16 +261,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {lastSwiped && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleUndo}
-              className="flex items-center justify-center rounded-full bg-muted h-10 w-10 hover:bg-muted/70 transition-colors"
-              aria-label="Undo last swipe"
-            >
-              <Undo2 className="h-4 w-4 text-primary" />
-            </motion.button>
-          )}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => { setDraftFilters(filters); setShowFilters(true); }}
