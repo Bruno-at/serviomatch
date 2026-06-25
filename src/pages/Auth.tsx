@@ -21,7 +21,7 @@ const Auth = () => {
         if (error) throw error;
         toast.success("Welcome back! 💕");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -30,6 +30,13 @@ const Auth = () => {
           },
         });
         if (error) throw error;
+
+        if (data.user && data.user.identities?.length === 0) {
+          setIsLogin(true);
+          toast.info("This email already has an account. Please sign in to continue.");
+          return;
+        }
+
         toast.success("Account created! Check your email to confirm.");
       }
     } catch (error: any) {

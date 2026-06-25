@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(isDevelopmentMode ? MOCK_SESSION : null);
   const [loading, setLoading] = useState(isDevelopmentMode ? false : true);
   const initialized = useRef(isDevelopmentMode);
+  const initialSessionLoaded = useRef(isDevelopmentMode);
 
   useEffect(() => {
     if (isDevelopmentMode) return;
@@ -54,13 +55,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        setLoading(false);
+        if (initialSessionLoaded.current) setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session: restoredSession } }) => {
       setSession(restoredSession);
       setUser(restoredSession?.user ?? null);
+      initialSessionLoaded.current = true;
       setLoading(false);
     });
 

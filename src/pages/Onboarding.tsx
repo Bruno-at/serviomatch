@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 const TOTAL_STEPS = 10;
 
@@ -38,14 +39,45 @@ function calcAge(dob: string) {
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
+function getFirstIncompleteStep(progress: OnboardingProgress) {
+  if (!progress.firstName?.trim() || !progress.lastName?.trim()) return 3;
+  if (!progress.intents?.length) return 4;
+
+  const dob = `${progress.year || ""}-${progress.month || ""}-${progress.day || ""}`;
+  const age = calcAge(dob);
+  if (!progress.day || !progress.month || !progress.year || age < 18 || age > 100) return 5;
+
+  if (!progress.gender) return 6;
+  if (!progress.lookingFor) return 7;
+  if (!progress.photos?.length || (!progress.location && !progress.coords)) return 8;
+
+  return 9;
+}
+
 interface Props {
   onComplete: () => void;
 }
+
+type OnboardingProgress = Partial<{
+  firstName: string;
+  lastName: string;
+  intents: string[];
+  day: string;
+  month: string;
+  year: string;
+  gender: string;
+  lookingFor: string;
+  photos: string[];
+  location: string;
+  coords: { lat: number; lng: number } | null;
+}>;
 
 const Onboarding = ({ onComplete }: Props) => {
   const { user } = useAuth();
   const [step, setStep] = useState(user ? 3 : 1); // skip email step if already signed in
   const [loading, setLoading] = useState(false);
+  const progressKey = user ? `onboarding_progress_${user.id}` : null;
+  const [progressRestored, setProgressRestored] = useState(!user);
 
   // Step 1-2 (auth)
   const [email, setEmail] = useState("");
@@ -74,8 +106,111 @@ const Onboarding = ({ onComplete }: Props) => {
 
   // Welcome rotating message
   const [msgIdx, setMsgIdx] = useState(0);
+
   useEffect(() => {
-    if (step !== 7) return;
+    if (!user) { setProgressRestored(true); return; }
+
+    let cancelled = false;
+    setProgressRestored(false);
+
+    const restoreProgress = async () => {
+      const saved = progressKey ? localStorage.getItem(progressKey) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as OnboardingProgress;
+          if (cancelled) return;
+          setFirstName(parsed.firstName || "");
+          setLastName(parsed.lastName || "");
+          setIntents(parsed.intents || []);
+          setDay(parsed.day || "");
+          setMonth(parsed.month || "");
+          setYear(parsed.year || "");
+          setGender(parsed.gender || "");
+          setLookingFor(parsed.lookingFor || "");
+          setPhotos(parsed.photos || []);
+          setLocation(parsed.location || "");
+          setCoords(parsed.coords || null);
+          setStep(getFirstIncompleteStep(parsed));
+          setProgressRestored(true);
+          return;
+        } catch {
+          localStorage.removeItem(progressKey);
+        }
+      }
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, date_of_birth, gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled || !data) return;
+
+      const restored: OnboardingProgress = {
+        firstName: data.first_name || "",
+        lastName: data.last_name || "",
+        intents: data.dating_intents || [],
+        gender: data.gender || "",
+        lookingFor: data.looking_for || "",
+        photos: data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : [],
+        location: data.location || "",
+        coords: data.latitude != null && data.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
+      };
+
+      if (data.date_of_birth) {
+        const [savedYear, savedMonth, savedDay] = data.date_of_birth.split("-");
+        restored.year = savedYear || "";
+        restored.month = savedMonth || "";
+        restored.day = savedDay || "";
+      }
+
+      setFirstName(restored.firstName || "");
+      setLastName(restored.lastName || "");
+      setIntents(restored.intents || []);
+      setGender(restored.gender || "");
+      setLookingFor(restored.lookingFor || "");
+      setPhotos(restored.photos || []);
+      setLocation(restored.location || "");
+      setCoords(restored.coords || null);
+      if (data.latitude != null && data.longitude != null) {
+        setCoords({ lat: data.latitude, lng: data.longitude });
+      }
+      setYear(restored.year || "");
+      setMonth(restored.month || "");
+      setDay(restored.day || "");
+      setStep(getFirstIncompleteStep(restored));
+      setProgressRestored(true);
+    };
+
+    restoreProgress().finally(() => {
+      if (!cancelled) setProgressRestored(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [progressKey, user]);
+
+  useEffect(() => {
+    if (!progressKey || !progressRestored) return;
+
+    const progress: OnboardingProgress = {
+      firstName,
+      lastName,
+      intents,
+      day,
+      month,
+      year,
+      gender,
+      lookingFor,
+      photos,
+      location,
+      coords,
+    };
+
+    localStorage.setItem(progressKey, JSON.stringify(progress));
+  }, [coords, day, firstName, gender, intents, lastName, location, lookingFor, month, photos, progressKey, progressRestored, year]);
+
+  useEffect(() => {
+    if (step !== 9) return;
     const t = setInterval(() => setMsgIdx((i) => (i + 1) % WELCOME_MESSAGES.length), 2500);
     return () => clearInterval(t);
   }, [step]);
@@ -83,7 +218,7 @@ const Onboarding = ({ onComplete }: Props) => {
   // Sample profile photos for welcome screen
   const [samplePhotos, setSamplePhotos] = useState<string[]>([]);
   useEffect(() => {
-    if (step !== 7) return;
+    if (step !== 9) return;
     supabase.from("profiles").select("avatar_url").not("avatar_url", "is", null).limit(20)
       .then(({ data }) => {
         const urls = (data || []).map((d) => d.avatar_url as string).filter(Boolean);
@@ -154,7 +289,8 @@ const Onboarding = ({ onComplete }: Props) => {
     setLoading(true);
     const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const age = calcAge(dob);
-    const { error } = await supabase.from("profiles").update({
+    const { error } = await supabase.from("profiles").upsert({
+      user_id: user.id,
       first_name: firstName,
       last_name: lastName,
       display_name: `${firstName} ${lastName}`.trim() || firstName,
@@ -170,9 +306,13 @@ const Onboarding = ({ onComplete }: Props) => {
       longitude: coords?.lng ?? null,
       photo_verification_pending: photos.length > 0,
       onboarding_completed: true,
-    }).eq("user_id", user.id);
+      email_verified: true,
+      profile_completed: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
+    if (progressKey) localStorage.removeItem(progressKey);
     toast.success("Welcome to Spark! 🔥");
     onComplete();
   };
@@ -195,13 +335,81 @@ const Onboarding = ({ onComplete }: Props) => {
     }
   };
 
-  const next = () => {
+  const saveStepProgress = async (currentStep: number) => {
+    if (!user || currentStep < 3 || currentStep > 8) return true;
+
+    const displayName =
+      `${firstName} ${lastName}`.trim() ||
+      user.user_metadata?.display_name ||
+      user.email?.split("@")[0] ||
+      "";
+
+    const update: TablesInsert<"profiles"> = {
+      user_id: user.id,
+      display_name: displayName,
+      email_verified: !!user.email_confirmed_at,
+      profile_completed: false,
+      onboarding_completed: false,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (currentStep >= 3) {
+      update.first_name = firstName;
+      update.last_name = lastName;
+    }
+    if (currentStep >= 4) update.dating_intents = intents;
+    if (currentStep >= 5) {
+      const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      update.date_of_birth = dob;
+      update.age = calcAge(dob);
+    }
+    if (currentStep >= 6) update.gender = gender;
+    if (currentStep >= 7) update.looking_for = lookingFor;
+    if (currentStep >= 8) {
+      update.photos = photos;
+      update.avatar_url = photos[0] || null;
+      update.location = location;
+      update.latitude = coords?.lat ?? null;
+      update.longitude = coords?.lng ?? null;
+      update.photo_verification_pending = photos.length > 0;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(update, { onConflict: "user_id" });
+
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+
+    return true;
+  };
+
+  const next = async () => {
     if (step === 1) return sendCode();
     if (step === 2) return verifyCode();
     if (step === 10) return finishOnboarding();
+
+    setLoading(true);
+    const saved = await saveStepProgress(step);
+    setLoading(false);
+    if (!saved) return;
+
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep((s) => Math.max(s - 1, user ? 3 : 1));
+
+  if (user && !progressRestored) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Restoring your setup...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">

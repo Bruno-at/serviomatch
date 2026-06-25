@@ -608,6 +608,7 @@ export type Database = {
           date_of_birth: string | null
           dating_intents: string[] | null
           display_name: string
+          email_verified: boolean
           first_name: string | null
           gender: string | null
           id: string
@@ -626,6 +627,7 @@ export type Database = {
           personality_answers: Json | null
           photo_verification_pending: boolean
           photos: string[] | null
+          profile_completed: boolean
           spotlight_expires_at: string | null
           updated_at: string
           user_id: string
@@ -642,6 +644,7 @@ export type Database = {
           date_of_birth?: string | null
           dating_intents?: string[] | null
           display_name?: string
+          email_verified?: boolean
           first_name?: string | null
           gender?: string | null
           id?: string
@@ -660,6 +663,7 @@ export type Database = {
           personality_answers?: Json | null
           photo_verification_pending?: boolean
           photos?: string[] | null
+          profile_completed?: boolean
           spotlight_expires_at?: string | null
           updated_at?: string
           user_id: string
@@ -676,6 +680,7 @@ export type Database = {
           date_of_birth?: string | null
           dating_intents?: string[] | null
           display_name?: string
+          email_verified?: boolean
           first_name?: string | null
           gender?: string | null
           id?: string
@@ -694,6 +699,7 @@ export type Database = {
           personality_answers?: Json | null
           photo_verification_pending?: boolean
           photos?: string[] | null
+          profile_completed?: boolean
           spotlight_expires_at?: string | null
           updated_at?: string
           user_id?: string
