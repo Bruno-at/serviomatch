@@ -288,7 +288,8 @@ const Onboarding = ({ onComplete }: Props) => {
     setLoading(true);
     const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const age = calcAge(dob);
-    const { error } = await supabase.from("profiles").update({
+    const { error } = await supabase.from("profiles").upsert({
+      user_id: user.id,
       first_name: firstName,
       last_name: lastName,
       display_name: `${firstName} ${lastName}`.trim() || firstName,
@@ -306,7 +307,8 @@ const Onboarding = ({ onComplete }: Props) => {
       onboarding_completed: true,
       email_verified: true,
       profile_completed: true,
-    }).eq("user_id", user.id);
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     if (progressKey) localStorage.removeItem(progressKey);
