@@ -53,7 +53,7 @@ const Index = () => {
 
   // Track unseen likes count
   useEffect(() => {
-    if (!user) return;
+    if (!user || needsOnboarding !== false) return;
     const refreshCount = async () => {
       const { count } = await supabase
         .from("likes")
@@ -68,18 +68,18 @@ const Index = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "likes", filter: `liked_id=eq.${user.id}` }, refreshCount)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user]);
+  }, [needsOnboarding, user]);
 
   // Auto-show daily rewards on first load
   useEffect(() => {
-    if (!user) return;
+    if (!user || needsOnboarding !== false) return;
     const lastShown = localStorage.getItem("daily_rewards_shown");
     const today = new Date().toISOString().split("T")[0];
     if (lastShown !== today) {
       setTimeout(() => setShowDailyRewards(true), 1500);
       localStorage.setItem("daily_rewards_shown", today);
     }
-  }, [user]);
+  }, [needsOnboarding, user]);
 
   useEffect(() => {
     if (!user) { setNeedsOnboarding(null); return; }
