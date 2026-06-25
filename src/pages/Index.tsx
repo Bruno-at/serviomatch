@@ -122,17 +122,20 @@ const Index = () => {
         return;
       }
 
-      const completed = Boolean(data.onboarding_completed && data.profile_completed);
+      const completed = Boolean(data.onboarding_completed);
 
       if (completed) {
-        // Keep verification flags in sync, but never block completed users on email/profile setup again.
-        if (!data.email_verified && emailVerified) {
+        // Keep completion/verification flags in sync, but never block completed users on setup again.
+        if ((!data.email_verified && emailVerified) || !data.profile_completed) {
           supabase
             .from("profiles")
-            .update({ email_verified: true })
+            .update({
+              email_verified: data.email_verified || emailVerified,
+              profile_completed: true,
+            })
             .eq("user_id", user.id)
             .then(({ error: updateError }) => {
-              if (updateError) console.error("Failed to sync email verification", updateError);
+              if (updateError) console.error("Failed to sync completion flags", updateError);
             });
         }
         setNeedsOnboarding(false);
