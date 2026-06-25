@@ -42,10 +42,25 @@ interface Props {
   onComplete: () => void;
 }
 
+type OnboardingProgress = Partial<{
+  firstName: string;
+  lastName: string;
+  intents: string[];
+  day: string;
+  month: string;
+  year: string;
+  gender: string;
+  lookingFor: string;
+  photos: string[];
+  location: string;
+  coords: { lat: number; lng: number } | null;
+}>;
+
 const Onboarding = ({ onComplete }: Props) => {
   const { user } = useAuth();
   const [step, setStep] = useState(user ? 3 : 1); // skip email step if already signed in
   const [loading, setLoading] = useState(false);
+  const progressKey = user ? `onboarding_progress_${user.id}` : null;
 
   // Step 1-2 (auth)
   const [email, setEmail] = useState("");
@@ -74,6 +89,87 @@ const Onboarding = ({ onComplete }: Props) => {
 
   // Welcome rotating message
   const [msgIdx, setMsgIdx] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const restoreProgress = async () => {
+      const saved = progressKey ? localStorage.getItem(progressKey) : null;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as OnboardingProgress;
+          if (cancelled) return;
+          setFirstName(parsed.firstName || "");
+          setLastName(parsed.lastName || "");
+          setIntents(parsed.intents || []);
+          setDay(parsed.day || "");
+          setMonth(parsed.month || "");
+          setYear(parsed.year || "");
+          setGender(parsed.gender || "");
+          setLookingFor(parsed.lookingFor || "");
+          setPhotos(parsed.photos || []);
+          setLocation(parsed.location || "");
+          setCoords(parsed.coords || null);
+          return;
+        } catch {
+          localStorage.removeItem(progressKey);
+        }
+      }
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, date_of_birth, gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled || !data) return;
+
+      setFirstName(data.first_name || "");
+      setLastName(data.last_name || "");
+      setIntents(data.dating_intents || []);
+      setGender(data.gender || "");
+      setLookingFor(data.looking_for || "");
+      setPhotos(data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : []);
+      setLocation(data.location || "");
+      if (data.latitude != null && data.longitude != null) {
+        setCoords({ lat: data.latitude, lng: data.longitude });
+      }
+
+      if (data.date_of_birth) {
+        const [savedYear, savedMonth, savedDay] = data.date_of_birth.split("-");
+        setYear(savedYear || "");
+        setMonth(savedMonth || "");
+        setDay(savedDay || "");
+      }
+    };
+
+    restoreProgress();
+
+    return () => { cancelled = true; };
+  }, [progressKey, user]);
+
+  useEffect(() => {
+    if (!progressKey) return;
+
+    const progress: OnboardingProgress = {
+      firstName,
+      lastName,
+      intents,
+      day,
+      month,
+      year,
+      gender,
+      lookingFor,
+      photos,
+      location,
+      coords,
+    };
+
+    localStorage.setItem(progressKey, JSON.stringify(progress));
+  }, [coords, day, firstName, gender, intents, lastName, location, lookingFor, month, photos, progressKey, year]);
+
   useEffect(() => {
     if (step !== 7) return;
     const t = setInterval(() => setMsgIdx((i) => (i + 1) % WELCOME_MESSAGES.length), 2500);
@@ -170,9 +266,12 @@ const Onboarding = ({ onComplete }: Props) => {
       longitude: coords?.lng ?? null,
       photo_verification_pending: photos.length > 0,
       onboarding_completed: true,
+      email_verified: true,
+      profile_completed: true,
     }).eq("user_id", user.id);
     setLoading(false);
     if (error) { toast.error(error.message); return; }
+    if (progressKey) localStorage.removeItem(progressKey);
     toast.success("Welcome to Spark! 🔥");
     onComplete();
   };
