@@ -334,10 +334,67 @@ const Onboarding = ({ onComplete }: Props) => {
     }
   };
 
-  const next = () => {
+  const saveStepProgress = async (currentStep: number) => {
+    if (!user || currentStep < 3 || currentStep > 8) return true;
+
+    const displayName =
+      `${firstName} ${lastName}`.trim() ||
+      user.user_metadata?.display_name ||
+      user.email?.split("@")[0] ||
+      "";
+
+    const update: Record<string, unknown> = {
+      user_id: user.id,
+      display_name: displayName,
+      email_verified: !!user.email_confirmed_at,
+      profile_completed: false,
+      onboarding_completed: false,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (currentStep >= 3) {
+      update.first_name = firstName;
+      update.last_name = lastName;
+    }
+    if (currentStep >= 4) update.dating_intents = intents;
+    if (currentStep >= 5) {
+      const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      update.date_of_birth = dob;
+      update.age = calcAge(dob);
+    }
+    if (currentStep >= 6) update.gender = gender;
+    if (currentStep >= 7) update.looking_for = lookingFor;
+    if (currentStep >= 8) {
+      update.photos = photos;
+      update.avatar_url = photos[0] || null;
+      update.location = location;
+      update.latitude = coords?.lat ?? null;
+      update.longitude = coords?.lng ?? null;
+      update.photo_verification_pending = photos.length > 0;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(update, { onConflict: "user_id" });
+
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+
+    return true;
+  };
+
+  const next = async () => {
     if (step === 1) return sendCode();
     if (step === 2) return verifyCode();
     if (step === 10) return finishOnboarding();
+
+    setLoading(true);
+    const saved = await saveStepProgress(step);
+    setLoading(false);
+    if (!saved) return;
+
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep((s) => Math.max(s - 1, user ? 3 : 1));
