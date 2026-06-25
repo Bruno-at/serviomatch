@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 const TOTAL_STEPS = 10;
 
@@ -343,7 +344,7 @@ const Onboarding = ({ onComplete }: Props) => {
       user.email?.split("@")[0] ||
       "";
 
-    const update: Record<string, unknown> = {
+    const update: TablesInsert<"profiles"> = {
       user_id: user.id,
       display_name: displayName,
       email_verified: !!user.email_confirmed_at,
