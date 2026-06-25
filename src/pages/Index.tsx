@@ -24,6 +24,15 @@ import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
+const SplashScreen = () => (
+  <div className="flex h-dvh items-center justify-center bg-background">
+    <div className="flex flex-col items-center gap-3">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      <p className="text-sm text-muted-foreground">Loading Spark...</p>
+    </div>
+  </div>
+);
+
 const Index = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("discover");
@@ -74,23 +83,76 @@ const Index = () => {
 
   useEffect(() => {
     if (!user) { setNeedsOnboarding(null); return; }
+    let cancelled = false;
+    setNeedsOnboarding(null);
+
     const checkOnboarding = async () => {
-      const { data } = await supabase.from("profiles")
-        .select("onboarding_completed, photos, avatar_url")
-        .eq("user_id", user.id).maybeSingle();
-      // @ts-ignore - column added in latest migration
-      const done = !!data?.onboarding_completed;
-      setNeedsOnboarding(!done);
+      const displayName =
+        user.user_metadata?.display_name ||
+        user.email?.split("@")[0] ||
+        "";
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed, profile_completed, email_verified")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Failed to load onboarding state", error);
+        setNeedsOnboarding(true);
+        return;
+      }
+
+      const emailVerified = !!user.email_confirmed_at;
+
+      if (!data) {
+        const { error: createError } = await supabase.from("profiles").insert({
+          user_id: user.id,
+          display_name: displayName,
+          email_verified: emailVerified,
+          profile_completed: false,
+          onboarding_completed: false,
+        });
+
+        if (createError) console.error("Failed to create profile", createError);
+        if (!cancelled) setNeedsOnboarding(true);
+        return;
+      }
+
+      const completed = Boolean(data.onboarding_completed && data.profile_completed);
+
+      if (completed) {
+        // Keep verification flags in sync, but never block completed users on email/profile setup again.
+        if (!data.email_verified && emailVerified) {
+          supabase
+            .from("profiles")
+            .update({ email_verified: true })
+            .eq("user_id", user.id)
+            .then(({ error: updateError }) => {
+              if (updateError) console.error("Failed to sync email verification", updateError);
+            });
+        }
+        setNeedsOnboarding(false);
+        return;
+      }
+
+      setNeedsOnboarding(true);
     };
+
     checkOnboarding();
+
+    return () => { cancelled = true; };
   }, [user]);
 
   if (loading) {
-    return <div className="flex h-dvh items-center justify-center bg-background"><p className="text-sm text-muted-foreground">Loading...</p></div>;
+    return <SplashScreen />;
   }
-  if (!user) return <Onboarding onComplete={() => setNeedsOnboarding(false)} />;
+  if (!user) return <Auth />;
   if (needsOnboarding === null) {
-    return <div className="flex h-dvh items-center justify-center bg-background"><p className="text-sm text-muted-foreground">Loading...</p></div>;
+    return <SplashScreen />;
   }
   if (needsOnboarding) {
     return <Onboarding onComplete={() => setNeedsOnboarding(false)} />;
