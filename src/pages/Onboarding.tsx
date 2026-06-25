@@ -38,6 +38,21 @@ function calcAge(dob: string) {
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
+function getFirstIncompleteStep(progress: OnboardingProgress) {
+  if (!progress.firstName?.trim() || !progress.lastName?.trim()) return 3;
+  if (!progress.intents?.length) return 4;
+
+  const dob = `${progress.year || ""}-${progress.month || ""}-${progress.day || ""}`;
+  const age = calcAge(dob);
+  if (!progress.day || !progress.month || !progress.year || age < 18 || age > 100) return 5;
+
+  if (!progress.gender) return 6;
+  if (!progress.lookingFor) return 7;
+  if (!progress.photos?.length || (!progress.location && !progress.coords)) return 8;
+
+  return 9;
+}
+
 interface Props {
   onComplete: () => void;
 }
@@ -112,6 +127,7 @@ const Onboarding = ({ onComplete }: Props) => {
           setPhotos(parsed.photos || []);
           setLocation(parsed.location || "");
           setCoords(parsed.coords || null);
+          setStep(getFirstIncompleteStep(parsed));
           return;
         } catch {
           localStorage.removeItem(progressKey);
@@ -126,23 +142,39 @@ const Onboarding = ({ onComplete }: Props) => {
 
       if (cancelled || !data) return;
 
-      setFirstName(data.first_name || "");
-      setLastName(data.last_name || "");
-      setIntents(data.dating_intents || []);
-      setGender(data.gender || "");
-      setLookingFor(data.looking_for || "");
-      setPhotos(data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : []);
-      setLocation(data.location || "");
-      if (data.latitude != null && data.longitude != null) {
-        setCoords({ lat: data.latitude, lng: data.longitude });
-      }
+      const restored: OnboardingProgress = {
+        firstName: data.first_name || "",
+        lastName: data.last_name || "",
+        intents: data.dating_intents || [],
+        gender: data.gender || "",
+        lookingFor: data.looking_for || "",
+        photos: data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : [],
+        location: data.location || "",
+        coords: data.latitude != null && data.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
+      };
 
       if (data.date_of_birth) {
         const [savedYear, savedMonth, savedDay] = data.date_of_birth.split("-");
-        setYear(savedYear || "");
-        setMonth(savedMonth || "");
-        setDay(savedDay || "");
+        restored.year = savedYear || "";
+        restored.month = savedMonth || "";
+        restored.day = savedDay || "";
       }
+
+      setFirstName(restored.firstName || "");
+      setLastName(restored.lastName || "");
+      setIntents(restored.intents || []);
+      setGender(restored.gender || "");
+      setLookingFor(restored.lookingFor || "");
+      setPhotos(restored.photos || []);
+      setLocation(restored.location || "");
+      setCoords(restored.coords || null);
+      if (data.latitude != null && data.longitude != null) {
+        setCoords({ lat: data.latitude, lng: data.longitude });
+      }
+      setYear(restored.year || "");
+      setMonth(restored.month || "");
+      setDay(restored.day || "");
+      setStep(getFirstIncompleteStep(restored));
     };
 
     restoreProgress();
@@ -171,7 +203,7 @@ const Onboarding = ({ onComplete }: Props) => {
   }, [coords, day, firstName, gender, intents, lastName, location, lookingFor, month, photos, progressKey, year]);
 
   useEffect(() => {
-    if (step !== 7) return;
+    if (step !== 9) return;
     const t = setInterval(() => setMsgIdx((i) => (i + 1) % WELCOME_MESSAGES.length), 2500);
     return () => clearInterval(t);
   }, [step]);
@@ -179,7 +211,7 @@ const Onboarding = ({ onComplete }: Props) => {
   // Sample profile photos for welcome screen
   const [samplePhotos, setSamplePhotos] = useState<string[]>([]);
   useEffect(() => {
-    if (step !== 7) return;
+    if (step !== 9) return;
     supabase.from("profiles").select("avatar_url").not("avatar_url", "is", null).limit(20)
       .then(({ data }) => {
         const urls = (data || []).map((d) => d.avatar_url as string).filter(Boolean);
