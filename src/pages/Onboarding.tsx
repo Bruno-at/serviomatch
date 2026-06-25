@@ -76,6 +76,7 @@ const Onboarding = ({ onComplete }: Props) => {
   const [step, setStep] = useState(user ? 3 : 1); // skip email step if already signed in
   const [loading, setLoading] = useState(false);
   const progressKey = user ? `onboarding_progress_${user.id}` : null;
+  const [progressRestored, setProgressRestored] = useState(!user);
 
   // Step 1-2 (auth)
   const [email, setEmail] = useState("");
@@ -106,9 +107,10 @@ const Onboarding = ({ onComplete }: Props) => {
   const [msgIdx, setMsgIdx] = useState(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setProgressRestored(true); return; }
 
     let cancelled = false;
+    setProgressRestored(false);
 
     const restoreProgress = async () => {
       const saved = progressKey ? localStorage.getItem(progressKey) : null;
@@ -128,6 +130,7 @@ const Onboarding = ({ onComplete }: Props) => {
           setLocation(parsed.location || "");
           setCoords(parsed.coords || null);
           setStep(getFirstIncompleteStep(parsed));
+          setProgressRestored(true);
           return;
         } catch {
           localStorage.removeItem(progressKey);
@@ -175,15 +178,18 @@ const Onboarding = ({ onComplete }: Props) => {
       setMonth(restored.month || "");
       setDay(restored.day || "");
       setStep(getFirstIncompleteStep(restored));
+      setProgressRestored(true);
     };
 
-    restoreProgress();
+    restoreProgress().finally(() => {
+      if (!cancelled) setProgressRestored(true);
+    });
 
     return () => { cancelled = true; };
   }, [progressKey, user]);
 
   useEffect(() => {
-    if (!progressKey) return;
+    if (!progressKey || !progressRestored) return;
 
     const progress: OnboardingProgress = {
       firstName,
@@ -200,7 +206,7 @@ const Onboarding = ({ onComplete }: Props) => {
     };
 
     localStorage.setItem(progressKey, JSON.stringify(progress));
-  }, [coords, day, firstName, gender, intents, lastName, location, lookingFor, month, photos, progressKey, year]);
+  }, [coords, day, firstName, gender, intents, lastName, location, lookingFor, month, photos, progressKey, progressRestored, year]);
 
   useEffect(() => {
     if (step !== 9) return;
