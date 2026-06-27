@@ -1,21 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Sparkles, SlidersHorizontal } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 import ReportDialog from "./ReportDialog";
 import CompatibilityDialog from "./CompatibilityDialog";
 import MatchPopup from "./MatchPopup";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import FiltersDialog from "./FiltersDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQuestions";
+import {
+  DEFAULT_FILTERS, type DiscoverFilters, countActiveFilters,
+} from "@/lib/filterOptions";
 
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
@@ -23,21 +21,7 @@ interface DiscoverViewProps {
   onNavigateToChat?: (matchId: string, profile: Tables<"profiles">) => void;
 }
 
-type GenderPref = "all" | "male" | "female" | "other";
-
-interface Filters {
-  maxDistance: number; // km
-  ageRange: [number, number];
-  gender: GenderPref;
-  onlineOnly: boolean;
-}
-
-const DEFAULT_FILTERS: Filters = {
-  maxDistance: 50,
-  ageRange: [18, 45],
-  gender: "all",
-  onlineOnly: false,
-};
+const FILTERS_STORAGE_KEY = "spark:discover-filters:v2";
 
 const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: DiscoverViewProps) => {
   const { user } = useAuth();
@@ -50,10 +34,34 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   const [compatTarget, setCompatTarget] = useState<{ name: string; score: number; shared: string[]; matchedQuestions: string[] } | null>(null);
   const [lastSwiped, setLastSwiped] = useState<{ profile: Tables<"profiles">; direction: string } | null>(null);
   const [undoCount, setUndoCount] = useState(0);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<DiscoverFilters>(() => {
+    try {
+      const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_FILTERS;
+  });
   const [showFilters, setShowFilters] = useState(false);
   const MAX_FREE_UNDOS = 3;
+  const activeFilterCount = countActiveFilters(filters);
+
+  // Hydrate filter preferences from server (overrides local on first load)
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("user_filter_preferences")
+        .select("filters")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const saved = (data as any)?.filters;
+      if (!cancelled && saved) {
+        setFilters({ ...DEFAULT_FILTERS, ...(saved as Partial<DiscoverFilters>) });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -69,19 +77,55 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
       const excludeIds = [user.id, ...(likedData?.map((l) => l.liked_id) || []), ...(blockedData?.map((b: any) => b.blocked_id) || [])];
 
-      let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(40);
+      let query = supabase.from("profiles").select("*").not("user_id", "in", `(${excludeIds.join(",")})`).limit(80);
 
-      // Age range filter
+      // Basics
       query = query.gte("age", filters.ageRange[0]).lte("age", filters.ageRange[1]);
+      if (filters.onlineOnly) query = query.eq("is_online", true);
+      if (filters.gender !== "all") query = query.eq("gender", filters.gender);
 
-      // Online only
-      if (filters.onlineOnly) {
-        query = query.eq("is_online", true);
+      // Popular
+      if (filters.country) query = query.ilike("country", filters.country);
+      if (filters.continent) query = query.eq("continent", filters.continent);
+      // Height: only enforce if narrowed from defaults
+      if (filters.heightRange[0] !== DEFAULT_FILTERS.heightRange[0]
+        || filters.heightRange[1] !== DEFAULT_FILTERS.heightRange[1]) {
+        query = query.gte("height_cm", filters.heightRange[0]).lte("height_cm", filters.heightRange[1]);
       }
+      if (filters.sexuality.length) query = query.in("sexuality", filters.sexuality);
+      if (filters.goals.length) query = query.overlaps("dating_intents", filters.goals);
+      if (filters.starSigns.length) query = query.in("star_sign", filters.starSigns);
+      if (filters.languages.length) query = query.overlaps("languages", filters.languages);
+
+      // Lifestyle
+      if (filters.children.length) query = query.in("children", filters.children);
+      if (filters.pets.length) query = query.overlaps("pets", filters.pets);
+      if (filters.smoking.length) query = query.in("smoking", filters.smoking);
+      if (filters.drinking.length) query = query.in("drinking", filters.drinking);
+      if (filters.education.length) query = query.in("education", filters.education);
+      if (filters.relationshipStatus.length) query = query.in("relationship_status", filters.relationshipStatus);
+      if (filters.religion.length) query = query.in("religion", filters.religion);
+      if (filters.occupation.length) query = query.in("occupation", filters.occupation);
+      if (filters.fitness.length) query = query.in("fitness", filters.fitness);
+      if (filters.diet.length) query = query.in("diet", filters.diet);
+      if (filters.interests.length) query = query.overlaps("interests", filters.interests);
+      if (filters.sleepSchedule.length) query = query.in("sleep_schedule", filters.sleepSchedule);
+      if (filters.ethnicity.length) query = query.in("ethnicity", filters.ethnicity);
+
+      // Personality
+      if (filters.personality.length) query = query.overlaps("personality_traits", filters.personality);
 
       const { data } = await query;
 
-      const sorted = (data || []).sort((a, b) => {
+      // Deduplicate by user_id just in case
+      const seen = new Set<string>();
+      const unique = (data || []).filter((p) => {
+        if (seen.has(p.user_id)) return false;
+        seen.add(p.user_id);
+        return true;
+      });
+
+      const sorted = unique.sort((a, b) => {
         const aBoosted = a.is_boosted && a.boost_expires_at && new Date(a.boost_expires_at) > new Date() ? 1 : 0;
         const bBoosted = b.is_boosted && b.boost_expires_at && new Date(b.boost_expires_at) > new Date() ? 1 : 0;
         if (bBoosted !== aBoosted) return bBoosted - aBoosted;
@@ -116,6 +160,20 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     );
   }, [currentProfile?.user_id, user]);
 
+  const applyFilters = useCallback(async (next: DiscoverFilters) => {
+    setFilters(next);
+    setShowFilters(false);
+    try { localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(next)); } catch {}
+    if (user) {
+      await (supabase as any).from("user_filter_preferences").upsert(
+        { user_id: user.id, filters: next, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    }
+    const active = countActiveFilters(next);
+    toast.success(active > 0 ? `Applied ${active} filter${active === 1 ? "" : "s"}` : "Filters reset");
+  }, [user]);
+
   const handleSwipe = useCallback(async (direction: "left" | "right") => {
     if (!user || !currentProfile) return;
     await supabase.from("swipe_history").insert({ user_id: user.id, swiped_id: currentProfile.user_id, direction });
@@ -128,7 +186,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       if (mutual) {
         const { data: matchId } = await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: currentProfile.user_id });
         setMatchPopup({ matchId: (matchId as any) || "", matchName: currentProfile.display_name, matchPhoto: currentProfile.avatar_url });
-
       } else {
         toast.success(`You liked ${currentProfile.display_name}! 💕`, { duration: 1500 });
       }
@@ -136,17 +193,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       toast(`Passed on ${currentProfile.display_name}`, { duration: 1000 });
     }
     setCurrentIndex((prev) => prev + 1);
-  }, [currentIndex, profiles, user, currentProfile]);
-
-  const handleSuperLike = useCallback(async () => {
-    if (!user || !currentProfile) return;
-    await supabase.from("swipe_history").insert({ user_id: user.id, swiped_id: currentProfile.user_id, direction: "up" });
-    await supabase.from("super_likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
-    await supabase.from("likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
-    setLastSwiped({ profile: currentProfile, direction: "up" });
-    toast.success(`🔥 Super Liked ${currentProfile.display_name}!`, { duration: 2000 });
-    setCurrentIndex((prev) => prev + 1);
-  }, [currentProfile, user]);
+  }, [user, currentProfile]);
 
   const handleUndo = useCallback(async () => {
     if (!lastSwiped || !user) return;
@@ -155,7 +202,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
       return;
     }
     const target = lastSwiped.profile.user_id;
-    // Reverse all side-effects of the last swipe so history stays clean
     await Promise.all([
       supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", target),
       supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", target),
@@ -168,88 +214,16 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     toast.success(`↩️ Brought back ${lastSwiped.profile.display_name} (${MAX_FREE_UNDOS - undoCount - 1} left)`);
   }, [lastSwiped, user, undoCount]);
 
-  const handleFavorite = useCallback(async () => {
-    if (!user || !currentProfile) return;
-    await supabase.from("favorites").insert({ user_id: user.id, favorited_id: currentProfile.user_id });
-    toast.success(`⭐ Added ${currentProfile.display_name} to favorites`);
-  }, [currentProfile, user]);
-
-  const handleBookmark = useCallback(async () => {
-    if (!user || !currentProfile) return;
-    await supabase.from("swipe_history").insert({ user_id: user.id, swiped_id: currentProfile.user_id, direction: "down" });
-    await supabase.from("bookmarks").insert({ user_id: user.id, bookmarked_id: currentProfile.user_id });
-    toast.success(`🔖 Bookmarked ${currentProfile.display_name}`);
-    setLastSwiped({ profile: currentProfile, direction: "down" });
-    setCurrentIndex((prev) => prev + 1);
-  }, [currentProfile, user]);
-
   const handleWave = useCallback(async () => {
     if (!user || !currentProfile) return;
     await supabase.from("waves").insert({ sender_id: user.id, receiver_id: currentProfile.user_id });
     toast.success(`👋 Waved at ${currentProfile.display_name}!`);
   }, [currentProfile, user]);
 
-  const handleBoost = useCallback(() => {
-    toast.success("⚡ Your profile is now boosted for 30 minutes!", { duration: 3000 });
-  }, []);
-
   const handleCompliment = useCallback(async () => {
     if (!user || !currentProfile) return;
     await supabase.from("compliments").insert({ sender_id: user.id, receiver_id: currentProfile.user_id, message: "You have a great smile 😊" });
     toast.success(`💬 Compliment sent to ${currentProfile.display_name}!`);
-  }, [currentProfile, user]);
-
-  const handleCompatibility = useCallback(() => {
-    if (!currentProfile || !myProfile) return;
-    const result = computeCompatibility(
-      { interests: myProfile.interests, personality_answers: (myProfile.personality_answers || {}) as PersonalityAnswers },
-      { interests: currentProfile.interests, personality_answers: (currentProfile.personality_answers || {}) as PersonalityAnswers }
-    );
-    setCompatTarget({ name: currentProfile.display_name, score: result.score, shared: result.sharedInterests, matchedQuestions: result.matchedQuestions });
-  }, [currentProfile, myProfile]);
-
-  const handleShare = useCallback(async () => {
-    if (!currentProfile) return;
-    const data = { title: `Check out ${currentProfile.display_name} on Spark!`, url: window.location.href };
-    try {
-      if (navigator.share && navigator.canShare?.(data) !== false) {
-        await navigator.share(data);
-        return;
-      }
-      throw new Error("unsupported");
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success("Profile link copied!");
-      } catch {}
-    }
-  }, [currentProfile]);
-
-  const handleReport = useCallback(() => {
-    if (!currentProfile) return;
-    setReportTarget({ id: currentProfile.user_id, name: currentProfile.display_name });
-  }, [currentProfile]);
-
-  const handleSecretCrush = useCallback(async () => {
-    if (!user || !currentProfile) return;
-    const { error } = await supabase.from("secret_crushes").insert({ crusher_id: user.id, crushed_id: currentProfile.user_id });
-    if (error) {
-      if (error.code === "23505") toast.info("Already in your crush list 💖");
-      else toast.error("Failed to add secret crush");
-      return;
-    }
-    const { data: reverse } = await supabase.from("secret_crushes").select("id")
-      .eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id).maybeSingle();
-    if (reverse) {
-      await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", user.id).eq("crushed_id", currentProfile.user_id);
-      await supabase.from("secret_crushes").update({ is_mutual: true }).eq("crusher_id", currentProfile.user_id).eq("crushed_id", user.id);
-      await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: currentProfile.user_id });
-
-      toast.success("💖 It's a Secret Match!");
-    } else {
-      toast.success(`💖🔒 Added ${currentProfile.display_name} as a secret crush`);
-    }
   }, [currentProfile, user]);
 
   const remaining = profiles.slice(currentIndex, currentIndex + 2);
@@ -269,113 +243,27 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
         <div className="flex items-center gap-2">
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => { setDraftFilters(filters); setShowFilters(true); }}
-            className="flex items-center gap-1.5 rounded-full bg-foreground text-background h-10 px-4 hover:opacity-90 transition-opacity shadow-sm"
+            onClick={() => setShowFilters(true)}
+            className="relative flex items-center gap-1.5 rounded-full bg-foreground text-background h-10 px-4 hover:opacity-90 transition-opacity shadow-sm"
             aria-label="Filters"
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="text-xs font-semibold">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-background text-foreground text-[10px] font-bold px-1.5">
+                {activeFilterCount}
+              </span>
+            )}
           </motion.button>
         </div>
       </div>
 
-      {/* Filters dialog */}
-      <Dialog open={showFilters} onOpenChange={setShowFilters}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-            <DialogDescription>Tune your discovery feed.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 py-2">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold">Distance</label>
-                <span className="text-xs text-muted-foreground">{draftFilters.maxDistance} km</span>
-              </div>
-              <Slider
-                value={[draftFilters.maxDistance]}
-                onValueChange={(v) => setDraftFilters((f) => ({ ...f, maxDistance: v[0] }))}
-                min={1} max={100} step={1}
-              />
-              <div className="flex gap-2 mt-3">
-                {[1, 5, 10, 50].map((km) => (
-                  <button
-                    key={km}
-                    onClick={() => setDraftFilters((f) => ({ ...f, maxDistance: km }))}
-                    className={`flex-1 rounded-full py-1.5 text-xs font-semibold border transition-all ${
-                      draftFilters.maxDistance === km
-                        ? "bg-foreground text-background border-foreground"
-                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-                    }`}
-                  >
-                    {km} km
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold">Age range</label>
-                <span className="text-xs text-muted-foreground">
-                  {draftFilters.ageRange[0]} – {draftFilters.ageRange[1]}
-                </span>
-              </div>
-              <Slider
-                value={draftFilters.ageRange}
-                onValueChange={(v) => setDraftFilters((f) => ({ ...f, ageRange: [v[0], v[1]] as [number, number] }))}
-                min={18} max={70} step={1}
-                minStepsBetweenThumbs={1}
-              />
-            </div>
-
-            <details className="group rounded-xl border border-border bg-muted/30">
-              <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-sm font-semibold list-none">
-                Advanced filters
-                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="space-y-4 px-3 pb-3 pt-1">
-                <div>
-                  <label className="text-xs font-semibold mb-2 block text-muted-foreground">Show me</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(["all", "female", "male", "other"] as GenderPref[]).map((g) => (
-                      <button
-                        key={g}
-                        onClick={() => setDraftFilters((f) => ({ ...f, gender: g }))}
-                        className={`rounded-full py-1.5 text-xs font-semibold border capitalize transition-all ${
-                          draftFilters.gender === g
-                            ? "bg-foreground text-background border-foreground"
-                            : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-                        }`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">Online only</p>
-                    <p className="text-xs text-muted-foreground">Show only active users</p>
-                  </div>
-                  <Switch
-                    checked={draftFilters.onlineOnly}
-                    onCheckedChange={(c) => setDraftFilters((f) => ({ ...f, onlineOnly: c }))}
-                  />
-                </div>
-              </div>
-            </details>
-          </div>
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setDraftFilters(DEFAULT_FILTERS)}>
-              Reset
-            </Button>
-            <Button className="flex-1" onClick={() => { setFilters(draftFilters); setShowFilters(false); }}>
-              Apply
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FiltersDialog
+        open={showFilters}
+        onOpenChange={setShowFilters}
+        initial={filters}
+        onApply={applyFilters}
+      />
 
       {/* Card stack area */}
       <div className="relative mx-4 flex-1 mb-4">
@@ -392,35 +280,35 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
               remaining.map((profile, i) => {
                 const intents = (profile as any).dating_intents as string[] | null;
                 const intent = intents?.[0] || (profile as any).looking_for || undefined;
-                const country = profile.location?.split(",").pop()?.trim();
+                const country = (profile as any).country || profile.location?.split(",").pop()?.trim();
                 return (
-                <ProfileCard
-                  key={profile.id}
-                  profile={{
-                    id: profile.id,
-                    name: profile.display_name,
-                    age: profile.age || 0,
-                    distance: "Nearby",
-                    location: profile.location || undefined,
-                    country,
-                    intent,
-                    bio: profile.bio || "",
-                    image: profile.avatar_url || (profile.photos?.[0] ?? ""),
-                    photos: (profile.photos && profile.photos.length > 0)
-                      ? profile.photos
-                      : (profile.avatar_url ? [profile.avatar_url] : []),
-                    interests: profile.interests || [],
-                    prompts: [],
-                    verified: !!profile.is_verified,
-                  }}
-                  isTop={i === 0}
-                  onSwipeLeft={() => handleSwipe("left")}
-                  onSwipeRight={() => handleSwipe("right")}
-                  onUndo={handleUndo}
-                  canUndo={!!lastSwiped && undoCount < MAX_FREE_UNDOS}
-                  onWave={handleWave}
-                  onCompliment={handleCompliment}
-                />
+                  <ProfileCard
+                    key={profile.id}
+                    profile={{
+                      id: profile.id,
+                      name: profile.display_name,
+                      age: profile.age || 0,
+                      distance: "Nearby",
+                      location: profile.location || undefined,
+                      country,
+                      intent,
+                      bio: profile.bio || "",
+                      image: profile.avatar_url || (profile.photos?.[0] ?? ""),
+                      photos: (profile.photos && profile.photos.length > 0)
+                        ? profile.photos
+                        : (profile.avatar_url ? [profile.avatar_url] : []),
+                      interests: profile.interests || [],
+                      prompts: [],
+                      verified: !!profile.is_verified,
+                    }}
+                    isTop={i === 0}
+                    onSwipeLeft={() => handleSwipe("left")}
+                    onSwipeRight={() => handleSwipe("right")}
+                    onUndo={handleUndo}
+                    canUndo={!!lastSwiped && undoCount < MAX_FREE_UNDOS}
+                    onWave={handleWave}
+                    onCompliment={handleCompliment}
+                  />
                 );
               }).reverse()
             ) : (
@@ -429,10 +317,20 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                 <div className="rounded-full gradient-love p-6 mb-4">
                   <Sparkles className="h-10 w-10 text-primary-foreground" />
                 </div>
-                <h2 className="text-xl font-bold font-display text-foreground">No more profiles</h2>
-                <p className="mt-2 text-sm text-muted-foreground max-w-[240px]">
-                  Check back later — new people join every day!
+                <h2 className="text-xl font-bold font-display text-foreground">No matches found</h2>
+                <p className="mt-2 text-sm text-muted-foreground max-w-[260px]">
+                  {activeFilterCount > 0
+                    ? "Try widening your filters to see more people."
+                    : "Check back later — new people join every day!"}
                 </p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => applyFilters(DEFAULT_FILTERS)}
+                    className="mt-4 rounded-full bg-foreground text-background px-4 py-2 text-xs font-semibold hover:opacity-90"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

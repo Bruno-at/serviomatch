@@ -604,31 +604,50 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           boost_expires_at: string | null
+          children: string | null
+          continent: string | null
+          country: string | null
           created_at: string
           date_of_birth: string | null
           dating_intents: string[] | null
+          diet: string | null
           display_name: string
+          drinking: string | null
+          education: string | null
           email_verified: boolean
+          ethnicity: string | null
           first_name: string | null
+          fitness: string | null
           gender: string | null
+          height_cm: number | null
           id: string
           interests: string[] | null
           is_boosted: boolean | null
           is_online: boolean | null
           is_spotlight: boolean | null
           is_verified: boolean | null
+          languages: string[] | null
           last_name: string | null
           last_online: string | null
           latitude: number | null
           location: string | null
           longitude: number | null
           looking_for: string | null
+          occupation: string | null
           onboarding_completed: boolean
           personality_answers: Json | null
+          personality_traits: string[] | null
+          pets: string[] | null
           photo_verification_pending: boolean
           photos: string[] | null
           profile_completed: boolean
+          relationship_status: string | null
+          religion: string | null
+          sexuality: string | null
+          sleep_schedule: string | null
+          smoking: string | null
           spotlight_expires_at: string | null
+          star_sign: string | null
           updated_at: string
           user_id: string
           video_url: string | null
@@ -640,31 +659,50 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           boost_expires_at?: string | null
+          children?: string | null
+          continent?: string | null
+          country?: string | null
           created_at?: string
           date_of_birth?: string | null
           dating_intents?: string[] | null
+          diet?: string | null
           display_name?: string
+          drinking?: string | null
+          education?: string | null
           email_verified?: boolean
+          ethnicity?: string | null
           first_name?: string | null
+          fitness?: string | null
           gender?: string | null
+          height_cm?: number | null
           id?: string
           interests?: string[] | null
           is_boosted?: boolean | null
           is_online?: boolean | null
           is_spotlight?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           looking_for?: string | null
+          occupation?: string | null
           onboarding_completed?: boolean
           personality_answers?: Json | null
+          personality_traits?: string[] | null
+          pets?: string[] | null
           photo_verification_pending?: boolean
           photos?: string[] | null
           profile_completed?: boolean
+          relationship_status?: string | null
+          religion?: string | null
+          sexuality?: string | null
+          sleep_schedule?: string | null
+          smoking?: string | null
           spotlight_expires_at?: string | null
+          star_sign?: string | null
           updated_at?: string
           user_id: string
           video_url?: string | null
@@ -676,31 +714,50 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           boost_expires_at?: string | null
+          children?: string | null
+          continent?: string | null
+          country?: string | null
           created_at?: string
           date_of_birth?: string | null
           dating_intents?: string[] | null
+          diet?: string | null
           display_name?: string
+          drinking?: string | null
+          education?: string | null
           email_verified?: boolean
+          ethnicity?: string | null
           first_name?: string | null
+          fitness?: string | null
           gender?: string | null
+          height_cm?: number | null
           id?: string
           interests?: string[] | null
           is_boosted?: boolean | null
           is_online?: boolean | null
           is_spotlight?: boolean | null
           is_verified?: boolean | null
+          languages?: string[] | null
           last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
           looking_for?: string | null
+          occupation?: string | null
           onboarding_completed?: boolean
           personality_answers?: Json | null
+          personality_traits?: string[] | null
+          pets?: string[] | null
           photo_verification_pending?: boolean
           photos?: string[] | null
           profile_completed?: boolean
+          relationship_status?: string | null
+          religion?: string | null
+          sexuality?: string | null
+          sleep_schedule?: string | null
+          smoking?: string | null
           spotlight_expires_at?: string | null
+          star_sign?: string | null
           updated_at?: string
           user_id?: string
           video_url?: string | null
@@ -978,6 +1035,27 @@ export type Database = {
           balance?: number
           created_at?: string
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_filter_preferences: {
+        Row: {
+          created_at: string
+          filters: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
           updated_at?: string
           user_id?: string
         }
