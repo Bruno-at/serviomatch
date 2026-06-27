@@ -165,8 +165,8 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     setShowFilters(false);
     try { localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(next)); } catch {}
     if (user) {
-      await supabase.from("user_filter_preferences" as any).upsert(
-        { user_id: user.id, filters: next as any, updated_at: new Date().toISOString() },
+      await (supabase as any).from("user_filter_preferences").upsert(
+        { user_id: user.id, filters: next, updated_at: new Date().toISOString() },
         { onConflict: "user_id" }
       );
     }
