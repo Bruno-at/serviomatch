@@ -50,13 +50,14 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("user_filter_preferences" as any)
+      const { data } = await (supabase as any)
+        .from("user_filter_preferences")
         .select("filters")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!cancelled && data?.filters) {
-        setFilters({ ...DEFAULT_FILTERS, ...(data.filters as Partial<DiscoverFilters>) });
+      const saved = (data as any)?.filters;
+      if (!cancelled && saved) {
+        setFilters({ ...DEFAULT_FILTERS, ...(saved as Partial<DiscoverFilters>) });
       }
     })();
     return () => { cancelled = true; };
