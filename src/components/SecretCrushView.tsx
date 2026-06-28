@@ -193,8 +193,7 @@ const SecretCrushView = ({ onBack, onViewProfile, onNavigateToChat }: SecretCrus
         .maybeSingle();
 
       if (reverse) {
-        await supabase.from("secret_crushes").update({ is_mutual: true }).eq("id", crush.id);
-        await supabase.from("secret_crushes").update({ is_mutual: true }).eq("id", reverse.id);
+        await supabase.rpc("confirm_mutual_crush" as any, { _other_user_id: crush.crushed_id });
         await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: crush.crushed_id });
         toast.success("💖 Your Secret Crush has been revealed!");
       }
