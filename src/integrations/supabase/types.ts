@@ -629,6 +629,7 @@ export type Database = {
           bio: string | null
           boost_expires_at: string | null
           children: string | null
+          city: string | null
           continent: string | null
           country: string | null
           created_at: string
@@ -681,6 +682,7 @@ export type Database = {
           bio?: string | null
           boost_expires_at?: string | null
           children?: string | null
+          city?: string | null
           continent?: string | null
           country?: string | null
           created_at?: string
@@ -733,6 +735,7 @@ export type Database = {
           bio?: string | null
           boost_expires_at?: string | null
           children?: string | null
+          city?: string | null
           continent?: string | null
           country?: string | null
           created_at?: string

@@ -279,8 +279,27 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
             {remaining.length > 0 ? (
               remaining.map((profile, i) => {
                 const intents = (profile as any).dating_intents as string[] | null;
-                const intent = intents?.[0] || (profile as any).looking_for || undefined;
+                const goal = intents?.[0] || (profile as any).looking_for || undefined;
                 const country = (profile as any).country || profile.location?.split(",").pop()?.trim();
+                const createdAt = (profile as any).created_at as string | undefined;
+                const ageMs = createdAt ? Date.now() - new Date(createdAt).getTime() : Infinity;
+                const isNew = ageMs < 7 * 24 * 60 * 60 * 1000;
+                const GOAL_EMOJI: Record<string, string> = {
+                  "Here to Date": "❤️",
+                  "Ready for a Relationship": "💍",
+                  "Here to Make Friends": "👫",
+                  "Open to Chat": "💬",
+                  "Casual Dating": "🌟",
+                  "Marriage": "💒",
+                  "Networking": "🤝",
+                };
+                const badgeText = isNew
+                  ? "🆕 Just Joined"
+                  : goal
+                  ? `${GOAL_EMOJI[goal] || "✨"} ${goal}`
+                  : undefined;
+                const city = (profile as any).city as string | undefined;
+                const locationLabel = [city, country].filter(Boolean).join(", ") || profile.location || undefined;
                 return (
                   <ProfileCard
                     key={profile.id}
@@ -289,9 +308,9 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                       name: profile.display_name,
                       age: profile.age || 0,
                       distance: "Nearby",
-                      location: profile.location || undefined,
+                      location: locationLabel,
                       country,
-                      intent,
+                      intent: badgeText,
                       bio: profile.bio || "",
                       image: profile.avatar_url || (profile.photos?.[0] ?? ""),
                       photos: (profile.photos && profile.photos.length > 0)
@@ -311,6 +330,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                   />
                 );
               }).reverse()
+
             ) : (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex h-full flex-col items-center justify-center text-center">
