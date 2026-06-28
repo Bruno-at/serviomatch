@@ -12,6 +12,10 @@ import VerificationFlow from "./VerificationFlow";
 import BoostSpotlight from "./BoostSpotlight";
 import SocialShare from "./SocialShare";
 import { PERSONALITY_QUESTIONS, type PersonalityAnswers } from "./PersonalityQuestions";
+import AboutPreferencesEditor, { computeAboutCompleteness } from "./AboutPreferencesEditor";
+import ProfileCompletionRing from "./ProfileCompletionRing";
+
+
 
 interface ProfileViewProps {
   onShowReferrals?: () => void;
