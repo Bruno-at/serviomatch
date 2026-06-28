@@ -64,10 +64,15 @@ const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNot
   const photos = ((profile as any).photos || []) as string[];
   const allImages = photos.length > 0 ? photos : profile.avatar_url ? [profile.avatar_url] : [];
 
+  const completeness = computeAboutCompleteness(profile);
+
   return (
-    <div className="flex h-full flex-col items-center px-6 pt-4">
+    <div className="flex h-full flex-col items-center px-6 pt-4 overflow-y-auto pb-24">
       <div className="flex w-full justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold font-display text-foreground">Profile</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold font-display text-foreground">Profile</h1>
+          <ProfileCompletionRing value={completeness} size={56} stroke={5} />
+        </div>
         <div className="flex gap-2">
           <button onClick={signOut} className="rounded-full bg-muted p-2">
             <LogOut className="h-5 w-5 text-muted-foreground" />
@@ -77,6 +82,7 @@ const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNot
           </button>
         </div>
       </div>
+
 
       {/* Boost & Spotlight */}
       <div className="w-full mb-4">
