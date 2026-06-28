@@ -367,14 +367,22 @@ const Onboarding = ({ onComplete }: Props) => {
       updated_at: new Date().toISOString(),
     };
 
+    const privateUpdate: TablesInsert<"profile_private"> = {
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    let writePrivate = false;
+
     if (currentStep >= 3) {
-      update.first_name = firstName;
-      update.last_name = lastName;
+      privateUpdate.first_name = firstName;
+      privateUpdate.last_name = lastName;
+      writePrivate = true;
     }
     if (currentStep >= 4) update.dating_intents = intents;
     if (currentStep >= 5) {
       const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      update.date_of_birth = dob;
+      privateUpdate.date_of_birth = dob;
+      writePrivate = true;
       update.age = calcAge(dob);
     }
     if (currentStep >= 6) update.gender = gender;
@@ -397,8 +405,19 @@ const Onboarding = ({ onComplete }: Props) => {
       return false;
     }
 
+    if (writePrivate) {
+      const { error: privErr } = await supabase
+        .from("profile_private")
+        .upsert(privateUpdate, { onConflict: "user_id" });
+      if (privErr) {
+        toast.error(privErr.message);
+        return false;
+      }
+    }
+
     return true;
   };
+
 
   const next = async () => {
     if (step === 1) return sendCode();
