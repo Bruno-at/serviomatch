@@ -298,10 +298,7 @@ const Onboarding = ({ onComplete }: Props) => {
     const age = calcAge(dob);
     const { error } = await supabase.from("profiles").upsert({
       user_id: user.id,
-      first_name: firstName,
-      last_name: lastName,
       display_name: `${firstName} ${lastName}`.trim() || firstName,
-      date_of_birth: dob,
       age,
       gender,
       looking_for: lookingFor,
@@ -317,6 +314,16 @@ const Onboarding = ({ onComplete }: Props) => {
       profile_completed: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
+    if (!error) {
+      const { error: privErr } = await supabase.from("profile_private").upsert({
+        user_id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        date_of_birth: dob,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      if (privErr) { setLoading(false); toast.error(privErr.message); return; }
+    }
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     if (progressKey) localStorage.removeItem(progressKey);
