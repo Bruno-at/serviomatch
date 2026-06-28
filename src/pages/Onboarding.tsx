@@ -138,27 +138,34 @@ const Onboarding = ({ onComplete }: Props) => {
         }
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, date_of_birth, gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const [{ data }, { data: priv }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("profile_private")
+          .select("first_name, last_name, date_of_birth")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
 
-      if (cancelled || !data) return;
+      if (cancelled || (!data && !priv)) return;
 
       const restored: OnboardingProgress = {
-        firstName: data.first_name || "",
-        lastName: data.last_name || "",
-        intents: data.dating_intents || [],
-        gender: data.gender || "",
-        lookingFor: data.looking_for || "",
-        photos: data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : [],
-        location: data.location || "",
-        coords: data.latitude != null && data.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
+        firstName: priv?.first_name || "",
+        lastName: priv?.last_name || "",
+        intents: data?.dating_intents || [],
+        gender: data?.gender || "",
+        lookingFor: data?.looking_for || "",
+        photos: data?.photos?.length ? data.photos : data?.avatar_url ? [data.avatar_url] : [],
+        location: data?.location || "",
+        coords: data?.latitude != null && data?.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
       };
 
-      if (data.date_of_birth) {
-        const [savedYear, savedMonth, savedDay] = data.date_of_birth.split("-");
+      if (priv?.date_of_birth) {
+        const [savedYear, savedMonth, savedDay] = priv.date_of_birth.split("-");
         restored.year = savedYear || "";
         restored.month = savedMonth || "";
         restored.day = savedDay || "";
@@ -172,7 +179,7 @@ const Onboarding = ({ onComplete }: Props) => {
       setPhotos(restored.photos || []);
       setLocation(restored.location || "");
       setCoords(restored.coords || null);
-      if (data.latitude != null && data.longitude != null) {
+      if (data?.latitude != null && data?.longitude != null) {
         setCoords({ lat: data.latitude, lng: data.longitude });
       }
       setYear(restored.year || "");
@@ -291,10 +298,7 @@ const Onboarding = ({ onComplete }: Props) => {
     const age = calcAge(dob);
     const { error } = await supabase.from("profiles").upsert({
       user_id: user.id,
-      first_name: firstName,
-      last_name: lastName,
       display_name: `${firstName} ${lastName}`.trim() || firstName,
-      date_of_birth: dob,
       age,
       gender,
       looking_for: lookingFor,
@@ -310,6 +314,16 @@ const Onboarding = ({ onComplete }: Props) => {
       profile_completed: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
+    if (!error) {
+      const { error: privErr } = await supabase.from("profile_private").upsert({
+        user_id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        date_of_birth: dob,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      if (privErr) { setLoading(false); toast.error(privErr.message); return; }
+    }
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     if (progressKey) localStorage.removeItem(progressKey);
@@ -353,14 +367,22 @@ const Onboarding = ({ onComplete }: Props) => {
       updated_at: new Date().toISOString(),
     };
 
+    const privateUpdate: TablesInsert<"profile_private"> = {
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    let writePrivate = false;
+
     if (currentStep >= 3) {
-      update.first_name = firstName;
-      update.last_name = lastName;
+      privateUpdate.first_name = firstName;
+      privateUpdate.last_name = lastName;
+      writePrivate = true;
     }
     if (currentStep >= 4) update.dating_intents = intents;
     if (currentStep >= 5) {
       const dob = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      update.date_of_birth = dob;
+      privateUpdate.date_of_birth = dob;
+      writePrivate = true;
       update.age = calcAge(dob);
     }
     if (currentStep >= 6) update.gender = gender;
@@ -383,8 +405,19 @@ const Onboarding = ({ onComplete }: Props) => {
       return false;
     }
 
+    if (writePrivate) {
+      const { error: privErr } = await supabase
+        .from("profile_private")
+        .upsert(privateUpdate, { onConflict: "user_id" });
+      if (privErr) {
+        toast.error(privErr.message);
+        return false;
+      }
+    }
+
     return true;
   };
+
 
   const next = async () => {
     if (step === 1) return sendCode();

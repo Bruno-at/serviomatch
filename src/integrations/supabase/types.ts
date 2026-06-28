@@ -576,6 +576,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_private: {
+        Row: {
+          date_of_birth: string | null
+          first_name: string | null
+          last_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          date_of_birth?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          date_of_birth?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_visitors: {
         Row: {
           created_at: string
@@ -608,7 +632,6 @@ export type Database = {
           continent: string | null
           country: string | null
           created_at: string
-          date_of_birth: string | null
           dating_intents: string[] | null
           diet: string | null
           display_name: string
@@ -616,7 +639,6 @@ export type Database = {
           education: string | null
           email_verified: boolean
           ethnicity: string | null
-          first_name: string | null
           fitness: string | null
           gender: string | null
           height_cm: number | null
@@ -627,7 +649,6 @@ export type Database = {
           is_spotlight: boolean | null
           is_verified: boolean | null
           languages: string[] | null
-          last_name: string | null
           last_online: string | null
           latitude: number | null
           location: string | null
@@ -663,7 +684,6 @@ export type Database = {
           continent?: string | null
           country?: string | null
           created_at?: string
-          date_of_birth?: string | null
           dating_intents?: string[] | null
           diet?: string | null
           display_name?: string
@@ -671,7 +691,6 @@ export type Database = {
           education?: string | null
           email_verified?: boolean
           ethnicity?: string | null
-          first_name?: string | null
           fitness?: string | null
           gender?: string | null
           height_cm?: number | null
@@ -682,7 +701,6 @@ export type Database = {
           is_spotlight?: boolean | null
           is_verified?: boolean | null
           languages?: string[] | null
-          last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
@@ -718,7 +736,6 @@ export type Database = {
           continent?: string | null
           country?: string | null
           created_at?: string
-          date_of_birth?: string | null
           dating_intents?: string[] | null
           diet?: string | null
           display_name?: string
@@ -726,7 +743,6 @@ export type Database = {
           education?: string | null
           email_verified?: boolean
           ethnicity?: string | null
-          first_name?: string | null
           fitness?: string | null
           gender?: string | null
           height_cm?: number | null
@@ -737,7 +753,6 @@ export type Database = {
           is_spotlight?: boolean | null
           is_verified?: boolean | null
           languages?: string[] | null
-          last_name?: string | null
           last_online?: string | null
           latitude?: number | null
           location?: string | null
@@ -1122,6 +1137,10 @@ export type Database = {
           streak_count: number
         }[]
       }
+      confirm_mutual_crush: {
+        Args: { _other_user_id: string }
+        Returns: boolean
+      }
       create_match_if_mutual: {
         Args: { _other_user_id: string }
         Returns: string
@@ -1132,6 +1151,15 @@ export type Database = {
           latitude: number
           longitude: number
         }[]
+      }
+      send_gift: {
+        Args: {
+          _gift_emoji: string
+          _gift_name: string
+          _match_id?: string
+          _receiver_id: string
+        }
+        Returns: string
       }
       send_notification: {
         Args: {
