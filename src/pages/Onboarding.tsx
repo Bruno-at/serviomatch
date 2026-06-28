@@ -138,27 +138,34 @@ const Onboarding = ({ onComplete }: Props) => {
         }
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, date_of_birth, gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const [{ data }, { data: priv }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("gender, looking_for, dating_intents, photos, avatar_url, location, latitude, longitude")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("profile_private")
+          .select("first_name, last_name, date_of_birth")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
 
-      if (cancelled || !data) return;
+      if (cancelled || (!data && !priv)) return;
 
       const restored: OnboardingProgress = {
-        firstName: data.first_name || "",
-        lastName: data.last_name || "",
-        intents: data.dating_intents || [],
-        gender: data.gender || "",
-        lookingFor: data.looking_for || "",
-        photos: data.photos?.length ? data.photos : data.avatar_url ? [data.avatar_url] : [],
-        location: data.location || "",
-        coords: data.latitude != null && data.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
+        firstName: priv?.first_name || "",
+        lastName: priv?.last_name || "",
+        intents: data?.dating_intents || [],
+        gender: data?.gender || "",
+        lookingFor: data?.looking_for || "",
+        photos: data?.photos?.length ? data.photos : data?.avatar_url ? [data.avatar_url] : [],
+        location: data?.location || "",
+        coords: data?.latitude != null && data?.longitude != null ? { lat: data.latitude, lng: data.longitude } : null,
       };
 
-      if (data.date_of_birth) {
-        const [savedYear, savedMonth, savedDay] = data.date_of_birth.split("-");
+      if (priv?.date_of_birth) {
+        const [savedYear, savedMonth, savedDay] = priv.date_of_birth.split("-");
         restored.year = savedYear || "";
         restored.month = savedMonth || "";
         restored.day = savedDay || "";
@@ -172,7 +179,7 @@ const Onboarding = ({ onComplete }: Props) => {
       setPhotos(restored.photos || []);
       setLocation(restored.location || "");
       setCoords(restored.coords || null);
-      if (data.latitude != null && data.longitude != null) {
+      if (data?.latitude != null && data?.longitude != null) {
         setCoords({ lat: data.latitude, lng: data.longitude });
       }
       setYear(restored.year || "");
