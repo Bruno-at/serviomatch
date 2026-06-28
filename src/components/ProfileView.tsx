@@ -225,13 +225,18 @@ const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNot
         </div>
       )}
 
+      <div className="mt-6 w-full">
+        <AboutPreferencesEditor profile={profile} onUpdate={setProfile} />
+      </div>
+
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => setEditing(true)}
         className="mt-6 w-full rounded-2xl gradient-love py-3.5 text-sm font-semibold text-primary-foreground shadow-card mb-24"
       >
-        Edit Profile
+        Edit Photos & Bio
       </motion.button>
+
     </div>
   );
 };
