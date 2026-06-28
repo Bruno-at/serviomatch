@@ -213,10 +213,10 @@ const ProfileCard = ({
           </div>
           {profile.intent && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-md">
-              <MessageCircle className="w-3.5 h-3.5 text-pink-500 fill-pink-500" />
               <span className="text-xs font-semibold text-gray-800">{profile.intent}</span>
             </div>
           )}
+
         </div>
 
         {/* Swipe overlay */}
