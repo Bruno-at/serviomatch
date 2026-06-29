@@ -319,6 +319,27 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                       interests: profile.interests || [],
                       prompts: [],
                       verified: !!profile.is_verified,
+                      details: {
+                        occupation: (profile as any).occupation,
+                        education: (profile as any).education,
+                        city,
+                        languages: (profile as any).languages,
+                        religion: (profile as any).religion,
+                        pets: (profile as any).pets,
+                        children: (profile as any).children,
+                        smoking: (profile as any).smoking,
+                        drinking: (profile as any).drinking,
+                        fitness: (profile as any).fitness,
+                        diet: (profile as any).diet,
+                        relationship_status: (profile as any).relationship_status,
+                        sleep_schedule: (profile as any).sleep_schedule,
+                        height_cm: (profile as any).height_cm,
+                        ethnicity: (profile as any).ethnicity,
+                        star_sign: (profile as any).star_sign,
+                        personality_traits: (profile as any).personality_traits,
+                        goal,
+                        avatar_url: profile.avatar_url,
+                      },
                     }}
                     isTop={i === 0}
                     onSwipeLeft={() => handleSwipe("left")}
