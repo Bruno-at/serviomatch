@@ -1148,6 +1148,10 @@ export type Database = {
         Args: { _other_user_id: string }
         Returns: string
       }
+      create_speed_dating_session: {
+        Args: { _other_user_id: string }
+        Returns: string
+      }
       get_my_coordinates: {
         Args: never
         Returns: {
