@@ -3,6 +3,28 @@ import profile2 from "@/assets/profile-2.jpg";
 import profile3 from "@/assets/profile-3.jpg";
 import profile4 from "@/assets/profile-4.jpg";
 
+export interface ProfileDetails {
+  occupation?: string | null;
+  education?: string | null;
+  city?: string | null;
+  languages?: string[] | null;
+  religion?: string | null;
+  pets?: string[] | null;
+  children?: string | null;
+  smoking?: string | null;
+  drinking?: string | null;
+  fitness?: string | null;
+  diet?: string | null;
+  relationship_status?: string | null;
+  sleep_schedule?: string | null;
+  height_cm?: number | null;
+  ethnicity?: string | null;
+  star_sign?: string | null;
+  personality_traits?: string[] | null;
+  goal?: string | null;
+  avatar_url?: string | null;
+}
+
 export interface Profile {
   id: string;
   name: string;
@@ -17,6 +39,7 @@ export interface Profile {
   interests: string[];
   prompts: { question: string; answer: string }[];
   verified: boolean;
+  details?: ProfileDetails;
 }
 
 export const profiles: Profile[] = [
