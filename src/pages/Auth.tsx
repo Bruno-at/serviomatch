@@ -11,6 +11,16 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const nextParam = (() => {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return null;
+    // same-origin relative path only
+    return raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+  })();
+  const emailRedirect = nextParam
+    ? `${window.location.origin}${nextParam}`
+    : window.location.origin;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -20,13 +30,14 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back! 💕");
+        if (nextParam) window.location.replace(nextParam);
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { display_name: displayName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: emailRedirect,
           },
         });
         if (error) throw error;
@@ -38,6 +49,7 @@ const Auth = () => {
         }
 
         toast.success("Account created! Check your email to confirm.");
+        if (nextParam && data.session) window.location.replace(nextParam);
       }
     } catch (error: any) {
       toast.error(error.message);

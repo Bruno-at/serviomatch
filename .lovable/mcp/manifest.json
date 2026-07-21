@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://mltsxtakggozbffjcszg.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "spark-mcp",
+      "version": "0.1.0",
+      "title": "Spark"
+    },
+    "tools": [
+      {
+        "name": "get_my_profile",
+        "title": "Get my profile",
+        "description": "Return the signed-in Spark user's profile (display name, bio, interests, city, verification status).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_my_bio",
+        "title": "Update my bio",
+        "description": "Replace the signed-in Spark user's bio text.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "bio": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "description": "New bio, up to 500 characters."
+            }
+          },
+          "required": [
+            "bio"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_matches",
+        "title": "List matches",
+        "description": "List the signed-in user's Spark matches with the other user's display name and profile summary.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_messages",
+        "title": "List recent messages",
+        "description": "Return the most recent chat messages for one of the signed-in user's Spark matches.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "match_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Match id from list_matches."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "How many recent messages to return (max 100)."
+            }
+          },
+          "required": [
+            "match_id",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "send_message",
+        "title": "Send message",
+        "description": "Send a chat message from the signed-in user in one of their Spark matches.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "match_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Match id from list_matches."
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "Message text (max 2000 chars)."
+            }
+          },
+          "required": [
+            "match_id",
+            "content"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
