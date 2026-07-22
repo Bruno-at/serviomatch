@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
-interface Challenge {
+export interface Challenge {
   id: string;
   title: string;
   description: string;
@@ -17,10 +17,16 @@ interface Challenge {
   reward_badge: string | null;
 }
 
-interface UserChallenge {
+export interface UserChallenge {
   challenge_id: string;
   progress: number;
   completed: boolean;
+}
+
+export interface IncrementChallengeResult {
+  progress: number;
+  completed: boolean;
+  reward_coins: number;
 }
 
 interface LeaderboardEntry {
