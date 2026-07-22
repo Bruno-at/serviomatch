@@ -1159,6 +1159,14 @@ export type Database = {
           longitude: number
         }[]
       }
+      increment_challenge_progress: {
+        Args: { _challenge_id: string; _delta?: number }
+        Returns: {
+          completed: boolean
+          progress: number
+          reward_coins: number
+        }[]
+      }
       send_gift: {
         Args: {
           _gift_emoji: string
