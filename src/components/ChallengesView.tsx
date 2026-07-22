@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
-interface Challenge {
+export interface Challenge {
   id: string;
   title: string;
   description: string;
@@ -17,10 +17,16 @@ interface Challenge {
   reward_badge: string | null;
 }
 
-interface UserChallenge {
+export interface UserChallenge {
   challenge_id: string;
   progress: number;
   completed: boolean;
+}
+
+export interface IncrementChallengeResult {
+  progress: number;
+  completed: boolean;
+  reward_coins: number;
 }
 
 interface LeaderboardEntry {
@@ -45,6 +51,8 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCoins, setTotalCoins] = useState(0);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [statusById, setStatusById] = useState<Record<string, { kind: "success" | "error"; message: string } | undefined>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -96,19 +104,58 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
     fetchData();
   }, [user]);
 
-  const joinChallenge = async (challengeId: string) => {
-    if (!user) return;
-    const existing = userChallenges.find((uc) => uc.challenge_id === challengeId);
-    if (existing) return;
-
-    await supabase.from("user_challenges").insert({
-      user_id: user.id,
-      challenge_id: challengeId,
-      progress: 0,
-    });
-    setUserChallenges((prev) => [...prev, { challenge_id: challengeId, progress: 0, completed: false }]);
-    toast.success("🏆 Challenge accepted!");
+  const setStatus = (id: string, s: { kind: "success" | "error"; message: string } | undefined) => {
+    setStatusById((prev) => ({ ...prev, [id]: s }));
+    if (s) setTimeout(() => setStatusById((prev) => ({ ...prev, [id]: undefined })), 2500);
   };
+
+  const incrementChallenge = async (challengeId: string, delta = 1) => {
+    if (!user || pendingId) return;
+    setPendingId(challengeId);
+    setStatus(challengeId, undefined);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)("increment_challenge_progress", {
+        _challenge_id: challengeId,
+        _delta: delta,
+      });
+      if (error) throw error;
+      const row = (Array.isArray(data) ? data[0] : data) as IncrementChallengeResult | null;
+      if (!row) throw new Error("No response from server");
+
+      setUserChallenges((prev) => {
+        const existing = prev.find((uc) => uc.challenge_id === challengeId);
+        if (existing) {
+          return prev.map((uc) =>
+            uc.challenge_id === challengeId
+              ? { ...uc, progress: row.progress, completed: row.completed }
+              : uc
+          );
+        }
+        return [...prev, { challenge_id: challengeId, progress: row.progress, completed: row.completed }];
+      });
+
+      if (row.reward_coins > 0) {
+        setTotalCoins((c) => c + row.reward_coins);
+        toast.success(`🎉 Challenge complete! +${row.reward_coins} coins`);
+        setStatus(challengeId, { kind: "success", message: `Completed! +${row.reward_coins} 🪙` });
+      } else if (row.completed) {
+        toast.success("🎉 Challenge complete!");
+        setStatus(challengeId, { kind: "success", message: "Completed!" });
+      } else {
+        setStatus(challengeId, { kind: "success", message: `Progress: ${row.progress}` });
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Something went wrong";
+      toast.error(message);
+      setStatus(challengeId, { kind: "error", message });
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const joinChallenge = (challengeId: string) => incrementChallenge(challengeId, 1);
+
 
   const getRankIcon = (i: number) => {
     if (i === 0) return <Crown className="h-5 w-5 text-yellow-500" />;
@@ -160,6 +207,8 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
             const progress = uc ? Math.min((uc.progress / c.target_count) * 100, 100) : 0;
             const joined = !!uc;
             const completed = uc?.completed;
+            const isPending = pendingId === c.id;
+            const status = statusById[c.id];
 
             return (
               <motion.div
@@ -196,15 +245,43 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
                       </div>
                     )}
 
-                    {!joined && (
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => joinChallenge(c.id)}
-                        className="mt-2 rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
-                      >
-                        Accept Challenge
-                      </motion.button>
-                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      {!joined && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          disabled={isPending}
+                          onClick={() => joinChallenge(c.id)}
+                          className="rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary disabled:opacity-60"
+                        >
+                          {isPending ? "Accepting…" : "Accept Challenge"}
+                        </motion.button>
+                      )}
+                      {joined && !completed && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          disabled={isPending}
+                          onClick={() => incrementChallenge(c.id, 1)}
+                          className="rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary disabled:opacity-60"
+                        >
+                          {isPending ? "Updating…" : "+1 Progress"}
+                        </motion.button>
+                      )}
+                      <AnimatePresence>
+                        {status && (
+                          <motion.span
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            role="status"
+                            className={`text-[10px] font-medium ${
+                              status.kind === "success" ? "text-green-600" : "text-destructive"
+                            }`}
+                          >
+                            {status.message}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </motion.div>
