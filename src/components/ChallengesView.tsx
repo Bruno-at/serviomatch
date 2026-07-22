@@ -207,6 +207,8 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
             const progress = uc ? Math.min((uc.progress / c.target_count) * 100, 100) : 0;
             const joined = !!uc;
             const completed = uc?.completed;
+            const isPending = pendingId === c.id;
+            const status = statusById[c.id];
 
             return (
               <motion.div
@@ -243,15 +245,43 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
                       </div>
                     )}
 
-                    {!joined && (
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => joinChallenge(c.id)}
-                        className="mt-2 rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
-                      >
-                        Accept Challenge
-                      </motion.button>
-                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      {!joined && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          disabled={isPending}
+                          onClick={() => joinChallenge(c.id)}
+                          className="rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary disabled:opacity-60"
+                        >
+                          {isPending ? "Accepting…" : "Accept Challenge"}
+                        </motion.button>
+                      )}
+                      {joined && !completed && (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          disabled={isPending}
+                          onClick={() => incrementChallenge(c.id, 1)}
+                          className="rounded-xl bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary disabled:opacity-60"
+                        >
+                          {isPending ? "Updating…" : "+1 Progress"}
+                        </motion.button>
+                      )}
+                      <AnimatePresence>
+                        {status && (
+                          <motion.span
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            role="status"
+                            className={`text-[10px] font-medium ${
+                              status.kind === "success" ? "text-green-600" : "text-destructive"
+                            }`}
+                          >
+                            {status.message}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </motion.div>
