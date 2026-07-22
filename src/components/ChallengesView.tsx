@@ -51,9 +51,8 @@ const ChallengesView = ({ onBack }: ChallengesViewProps) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCoins, setTotalCoins] = useState(0);
-
-  useEffect(() => {
-    if (!user) return;
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [statusById, setStatusById] = useState<Record<string, { kind: "success" | "error"; message: string } | undefined>>({});
 
     const fetchData = async () => {
       const [{ data: cData }, { data: ucData }, { data: coinData }] = await Promise.all([
