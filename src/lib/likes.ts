@@ -1,10 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type LikeResult =
-  | { ok: true; matched: boolean; matchId: string | null }
-  | { ok: false; error: string };
+export type LikeResult = {
+  ok: boolean;
+  matched?: boolean;
+  matchId?: string | null;
+  error?: string;
+};
 
-export type UnlikeResult = { ok: true } | { ok: false; error: string };
+export type UnlikeResult = { ok: boolean; error?: string };
 
 type Client = Pick<typeof supabase, "from" | "rpc">;
 
