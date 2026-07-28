@@ -148,35 +148,14 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
     if (!user || pending) return;
     setPending(like.id);
     try {
-      // Insert reciprocal like (idempotent-ish)
-      await supabase.from("likes").insert({
-        liker_id: user.id,
-        liked_id: like.liker_id,
-      });
-
-      // Create match (user1 < user2 ordering for consistency)
-      const [u1, u2] = [user.id, like.liker_id].sort();
-      const { data: existing } = await supabase
-        .from("matches")
-        .select("id")
-        .eq("user1_id", u1)
-        .eq("user2_id", u2)
-        .maybeSingle();
-
-      let matchId = existing?.id;
-      if (!matchId) {
-        const { data: newMatch } = await supabase
-          .from("matches")
-          .insert({ user1_id: u1, user2_id: u2 })
-          .select("id")
-          .maybeSingle();
-        matchId = newMatch?.id;
-      }
-
-      if (!matchId) {
-        toast.error("Could not create match");
+      // Reciprocal like + match creation via secure RPC (direct match inserts are blocked)
+      const res = await likeUser(user.id, like.liker_id);
+      if (!res.ok || !res.matchId) {
+        toast.error(res.error || "Could not create match");
         return;
       }
+      const matchId = res.matchId;
+
 
       // Notify the other user
       try {
