@@ -14,6 +14,8 @@ import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQues
 import {
   DEFAULT_FILTERS, type DiscoverFilters, countActiveFilters,
 } from "@/lib/filterOptions";
+import { likeUser, unlikeUser } from "@/lib/likes";
+
 
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
@@ -179,30 +181,34 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     setLastSwiped({ profile: currentProfile, direction });
 
     if (direction === "right") {
-      await supabase.from("likes").insert({ liker_id: user.id, liked_id: currentProfile.user_id });
-      const { data: mutual } = await supabase.from("likes").select("id")
-        .eq("liker_id", currentProfile.user_id).eq("liked_id", user.id).maybeSingle();
-      if (mutual) {
-        const { data: matchId } = await supabase.rpc("create_match_if_mutual" as any, { _other_user_id: currentProfile.user_id });
-        setMatchPopup({ matchId: (matchId as any) || "", matchName: currentProfile.display_name, matchPhoto: currentProfile.avatar_url });
+      const res = await likeUser(user.id, currentProfile.user_id);
+      if (!res.ok) {
+        toast.error(res.error);
+      } else if (res.matched) {
+        setMatchPopup({ matchId: res.matchId || "", matchName: currentProfile.display_name, matchPhoto: currentProfile.avatar_url });
       } else {
         toast.success(`You liked ${currentProfile.display_name}! 💕`, { duration: 1500 });
       }
     } else {
       toast(`Passed on ${currentProfile.display_name}`, { duration: 1000 });
     }
+
     setCurrentIndex((prev) => prev + 1);
   }, [user, currentProfile]);
 
   const handleUndo = useCallback(async () => {
     if (!lastSwiped || !user) return;
     const target = lastSwiped.profile.user_id;
+    const res = await unlikeUser(user.id, target);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
     await Promise.all([
-      supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", target),
-      supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", target),
       supabase.from("bookmarks").delete().eq("user_id", user.id).eq("bookmarked_id", target),
       supabase.from("swipe_history").delete().eq("user_id", user.id).eq("swiped_id", target),
     ]);
+
     setCurrentIndex((prev) => Math.max(0, prev - 1));
     setUndoCount((prev) => prev + 1);
     setLastSwiped(null);
