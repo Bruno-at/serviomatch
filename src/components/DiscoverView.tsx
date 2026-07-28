@@ -14,6 +14,8 @@ import { computeCompatibility, type PersonalityAnswers } from "./PersonalityQues
 import {
   DEFAULT_FILTERS, type DiscoverFilters, countActiveFilters,
 } from "@/lib/filterOptions";
+import { likeUser, unlikeUser } from "@/lib/likes";
+
 
 interface DiscoverViewProps {
   onShowFavorites?: () => void;
