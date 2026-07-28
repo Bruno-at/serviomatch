@@ -199,12 +199,16 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
   const handleUndo = useCallback(async () => {
     if (!lastSwiped || !user) return;
     const target = lastSwiped.profile.user_id;
+    const res = await unlikeUser(user.id, target);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
     await Promise.all([
-      supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", target),
-      supabase.from("super_likes").delete().eq("liker_id", user.id).eq("liked_id", target),
       supabase.from("bookmarks").delete().eq("user_id", user.id).eq("bookmarked_id", target),
       supabase.from("swipe_history").delete().eq("user_id", user.id).eq("swiped_id", target),
     ]);
+
     setCurrentIndex((prev) => Math.max(0, prev - 1));
     setUndoCount((prev) => prev + 1);
     setLastSwiped(null);
