@@ -260,7 +260,6 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
           </div>
         </div>
 
-        )}
 
         <div className="mt-5 flex items-center gap-2">
           {([
