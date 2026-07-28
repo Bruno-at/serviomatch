@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Lock, Eye, Crown, Sparkles, X, MapPin, BadgeCheck, SlidersHorizontal, Gem, ChevronRight } from "lucide-react";
+import { Heart, Eye, MapPin, BadgeCheck, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePremium } from "@/hooks/usePremium";
 import MatchPopup from "@/components/MatchPopup";
 import { toast } from "sonner";
 
@@ -23,7 +22,6 @@ interface LikeEntry {
 
 interface LikesViewProps {
   onShowVisitors?: () => void;
-  onShowVIP?: () => void;
 }
 
 type Filter = "all" | "new" | "recent";
@@ -40,13 +38,11 @@ const buildQuickMessage = (name: string) => {
   return options[Math.floor(Math.random() * options.length)];
 };
 
-const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
+const LikesView = ({ onShowVisitors }: LikesViewProps) => {
   const { user } = useAuth();
   const [likes, setLikes] = useState<LikeEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showUpgrade, setShowUpgrade] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const { isPremium, isDeveloper } = usePremium();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [match, setMatch] = useState<null | {
     matchId: string;
@@ -238,12 +234,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
               <span className="flex items-center gap-1 rounded-full gradient-love px-2.5 py-1 text-xs font-bold shadow-[0_4px_20px_-4px_hsl(350_80%_60%/0.6)]">
                 <Heart className="h-3 w-3 fill-white" /> {likes.length}
               </span>
-              {isDeveloper && (
-                <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-black shadow-[0_4px_20px_-4px_hsl(30_90%_55%/0.6)]">
-                  <Crown className="h-3 w-3" /> Developer
-                </span>
-              )}
-            </div>
+                          </div>
             <p className="mt-1.5 text-sm text-white/60">
               <span className="text-primary font-semibold">{likes.length}</span> people liked your profile
             </p>
@@ -269,35 +260,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
           </div>
         </div>
 
-        {!isPremium && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative mt-5 overflow-hidden rounded-3xl border border-white/10 p-4"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(280 60% 22% / 0.9), hsl(260 50% 14% / 0.95))",
-            }}
-          >
-            <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-pink-500 shadow-[0_8px_30px_-4px_hsl(25_90%_60%/0.5)]">
-                <Crown className="h-8 w-8 text-white drop-shadow" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold leading-tight">Unlock all your likes</h3>
-                <p className="mt-0.5 text-xs text-white/60">Upgrade to Pro and see who likes you</p>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowUpgrade(true)}
-                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-full gradient-love px-4 py-2 text-xs font-semibold shadow-[0_6px_20px_-4px_hsl(350_80%_60%/0.6)]"
-                >
-                  <Crown className="h-3.5 w-3.5" />
-                  Upgrade to Pro
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
         )}
 
         <div className="mt-5 flex items-center gap-2">
@@ -369,14 +331,13 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                 {like.profile?.avatar_url ? (
                   <img
                     src={like.profile.avatar_url}
-                    alt={isPremium ? like.profile.display_name : "Liked you"}
-                    onClick={() => !isPremium && setShowUpgrade(true)}
-                    className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
-                      !isPremium ? "scale-110 blur-2xl" : "group-hover:scale-105"
+                    alt={like.profile.display_name}
+                                        className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
+                      "group-hover:scale-105"
                     }`}
                   />
                 ) : (
-                  <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 ${!isPremium ? "blur-xl" : ""}`} />
+                  <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 `} />
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 pointer-events-none" />
@@ -385,18 +346,11 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                   {timeAgo(like.created_at)}
                 </div>
 
-                {!isPremium && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="rounded-full border border-white/20 bg-white/10 p-3 backdrop-blur-md shadow-lg">
-                      <Lock className="h-5 w-5 text-white/90" />
-                    </div>
-                  </div>
-                )}
 
                 <div className="absolute inset-x-0 bottom-0 p-2.5">
                   <div className="flex items-center gap-1">
                     <p className="truncate text-sm font-bold text-white">
-                      {isPremium ? (like.profile?.display_name || "Someone") : "Someone"}
+                      {like.profile?.display_name || "Someone"}
                     </p>
                     <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-primary text-white" />
                   </div>
@@ -431,26 +385,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
           </div>
         )}
 
-        {!isPremium && filtered.length > 0 && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowUpgrade(true)}
-            className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5 backdrop-blur-md"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-fuchsia-600 shadow-[0_6px_20px_-4px_hsl(320_80%_60%/0.6)]">
-              <Gem className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-white">See everyone who likes you</p>
-              <p className="text-[11px] text-white/60">Upgrade to Pro and match instantly</p>
-            </div>
-            <span className="flex items-center gap-1 rounded-full gradient-love px-3.5 py-2 text-xs font-semibold text-white shadow-[0_6px_20px_-4px_hsl(350_80%_60%/0.6)]">
-              Upgrade Now <ChevronRight className="h-3.5 w-3.5" />
-            </span>
-          </motion.button>
-        )}
       </div>
 
       {/* Match popup */}
@@ -464,69 +398,6 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
         onClose={() => setMatch(null)}
       />
 
-      <AnimatePresence>
-        {showUpgrade && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm"
-              onClick={() => setShowUpgrade(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              className="fixed inset-x-4 top-1/2 z-[90] mx-auto max-w-sm -translate-y-1/2 rounded-3xl border border-white/10 bg-gradient-to-b from-[hsl(260_40%_12%)] to-[hsl(260_40%_8%)] p-6 shadow-2xl text-white"
-            >
-              <button
-                onClick={() => setShowUpgrade(false)}
-                className="absolute right-4 top-4 rounded-full bg-white/10 p-1.5"
-              >
-                <X className="h-4 w-4 text-white/80" />
-              </button>
-              <div className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-pink-500 shadow-[0_10px_30px_-6px_hsl(25_90%_60%/0.6)]">
-                  <Crown className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold font-display">Upgrade to PRO</h3>
-                <p className="mt-2 text-sm text-white/60">
-                  See exactly who liked you 💖 and match instantly
-                </p>
-                <ul className="mt-4 space-y-2 text-left">
-                  {[
-                    "See everyone who liked you",
-                    "Unlimited likes & super likes",
-                    "Message before matching",
-                    "Boost your profile weekly",
-                  ].map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-xs text-white/85">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" /> {b}
-                    </li>
-                  ))}
-                </ul>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => {
-                    setShowUpgrade(false);
-                    onShowVIP?.();
-                  }}
-                  className="mt-5 w-full rounded-2xl gradient-love py-3.5 text-sm font-semibold shadow-[0_8px_30px_-6px_hsl(350_80%_60%/0.6)]"
-                >
-                  Upgrade to PRO
-                </motion.button>
-                <button
-                  onClick={() => setShowUpgrade(false)}
-                  className="mt-2 w-full py-2 text-xs text-white/50"
-                >
-                  Maybe later
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

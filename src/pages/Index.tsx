@@ -18,7 +18,6 @@ import LiveView from "@/components/LiveView";
 import SecretCrushView from "@/components/SecretCrushView";
 import ReferralSystem from "@/components/ReferralSystem";
 import DailyRewards from "@/components/DailyRewards";
-import VIPSubscription from "@/components/VIPSubscription";
 import NotificationsView from "@/components/NotificationsView";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
 import Auth from "./Auth";
@@ -44,7 +43,6 @@ const Index = () => {
   const [showCrush, setShowCrush] = useState(false);
   const [showReferrals, setShowReferrals] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
-  const [showVIP, setShowVIP] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
   const [likesBadge, setLikesBadge] = useState(0);
@@ -170,7 +168,6 @@ const Index = () => {
     setShowLive(false);
     setShowCrush(false);
     setShowReferrals(false);
-    setShowVIP(false);
     setShowLikes(false);
     setActiveTab(tab);
   };
@@ -203,8 +200,7 @@ const Index = () => {
     if (showLive) return <LiveView />;
     if (showCrush) return <SecretCrushView onBack={() => setShowCrush(false)} />;
     if (showReferrals) return <ReferralSystem onBack={() => setShowReferrals(false)} />;
-    if (showVIP) return <VIPSubscription onBack={() => setShowVIP(false)} />;
-    if (showLikes) return <LikesView onShowVisitors={() => { setShowLikes(false); setShowVisitors(true); }} onShowVIP={() => { setShowLikes(false); setShowVIP(true); }} />;
+    if (showLikes) return <LikesView onShowVisitors={() => { setShowLikes(false); setShowVisitors(true); }} />;
 
     return (
       <>
@@ -218,7 +214,6 @@ const Index = () => {
         {activeTab === "profile" && (
           <ProfileView
             onShowReferrals={() => setShowReferrals(true)}
-            onShowVIP={() => setShowVIP(true)}
             onShowDailyRewards={() => setShowDailyRewards(true)}
             onShowNotifications={() => setShowNotifications(true)}
           />

@@ -42,7 +42,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     return DEFAULT_FILTERS;
   });
   const [showFilters, setShowFilters] = useState(false);
-  const MAX_FREE_UNDOS = 3;
   const activeFilterCount = countActiveFilters(filters);
 
   // Hydrate filter preferences from server (overrides local on first load)
@@ -197,10 +196,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
 
   const handleUndo = useCallback(async () => {
     if (!lastSwiped || !user) return;
-    if (undoCount >= MAX_FREE_UNDOS) {
-      toast.error("Free undos used up! Upgrade to Premium for unlimited undos ✨");
-      return;
-    }
     const target = lastSwiped.profile.user_id;
     await Promise.all([
       supabase.from("likes").delete().eq("liker_id", user.id).eq("liked_id", target),
@@ -211,7 +206,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     setCurrentIndex((prev) => Math.max(0, prev - 1));
     setUndoCount((prev) => prev + 1);
     setLastSwiped(null);
-    toast.success(`↩️ Brought back ${lastSwiped.profile.display_name} (${MAX_FREE_UNDOS - undoCount - 1} left)`);
+    toast.success(`↩️ Brought back ${lastSwiped.profile.display_name}`);
   }, [lastSwiped, user, undoCount]);
 
   const handleWave = useCallback(async () => {
@@ -345,7 +340,7 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
                     onSwipeLeft={() => handleSwipe("left")}
                     onSwipeRight={() => handleSwipe("right")}
                     onUndo={handleUndo}
-                    canUndo={!!lastSwiped && undoCount < MAX_FREE_UNDOS}
+                    canUndo={!!lastSwiped}
                     onWave={handleWave}
                     onCompliment={handleCompliment}
                   />
