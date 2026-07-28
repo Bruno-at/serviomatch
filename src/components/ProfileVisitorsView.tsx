@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Eye, Lock, Crown } from "lucide-react";
+import { Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePremium } from "@/hooks/usePremium";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Visitor {
@@ -22,7 +21,6 @@ const ProfileVisitorsView = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (!user) return;
@@ -106,25 +104,6 @@ const ProfileVisitorsView = () => {
         </div>
       </div>
 
-      {!isPremium && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-4 flex items-center gap-3"
-        >
-          <Crown className="h-5 w-5 text-amber-500 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Upgrade to Premium</p>
-            <p className="text-xs text-muted-foreground">See exactly who visited your profile</p>
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="rounded-full bg-amber-500 px-4 py-1.5 text-xs font-semibold text-primary-foreground"
-          >
-            Upgrade
-          </motion.button>
-        </motion.div>
-      )}
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
@@ -156,25 +135,15 @@ const ProfileVisitorsView = () => {
             >
               <div className="relative">
                 <Avatar className="h-12 w-12">
-                  {isPremium ? (
-                    <>
-                      <AvatarImage src={visitor.profile?.avatar_url || ""} />
-                      <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                        {visitor.profile?.display_name?.[0] || "?"}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <AvatarFallback className="bg-muted">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                    </AvatarFallback>
-                  )}
+                  <AvatarImage src={visitor.profile?.avatar_url || ""} />
+                  <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
+                    {visitor.profile?.display_name?.[0] || "?"}
+                  </AvatarFallback>
                 </Avatar>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">
-                  {isPremium
-                    ? `${visitor.profile?.display_name || "Someone"}${visitor.profile?.age ? `, ${visitor.profile.age}` : ""}`
-                    : "Someone viewed you"}
+                  {`${visitor.profile?.display_name || "Someone"}${visitor.profile?.age ? `, ${visitor.profile.age}` : ""}`}
                 </p>
                 <p className="text-xs text-muted-foreground">{timeAgo(visitor.created_at)}</p>
               </div>
