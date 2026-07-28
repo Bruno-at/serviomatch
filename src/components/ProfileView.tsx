@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Share2, Users, Gift, Crown, Bell } from "lucide-react";
+import { Settings, Camera, BadgeCheck, MapPin, Edit3, LogOut, ChevronLeft, ChevronRight, ShieldCheck, Share2, Users, Gift, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Tables } from "@/integrations/supabase/types";

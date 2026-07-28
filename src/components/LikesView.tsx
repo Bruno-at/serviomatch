@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Lock, Eye, Crown, Sparkles, X, MapPin, BadgeCheck, SlidersHorizontal, Gem, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePremium } from "@/hooks/usePremium";
 import MatchPopup from "@/components/MatchPopup";
 import { toast } from "sonner";
 
@@ -23,7 +22,6 @@ interface LikeEntry {
 
 interface LikesViewProps {
   onShowVisitors?: () => void;
-  onShowVIP?: () => void;
 }
 
 type Filter = "all" | "new" | "recent";
@@ -40,13 +38,12 @@ const buildQuickMessage = (name: string) => {
   return options[Math.floor(Math.random() * options.length)];
 };
 
-const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
+const LikesView = ({ onShowVisitors }: LikesViewProps) => {
   const { user } = useAuth();
   const [likes, setLikes] = useState<LikeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const { isPremium, isDeveloper } = usePremium();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [match, setMatch] = useState<null | {
     matchId: string;
@@ -238,12 +235,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
               <span className="flex items-center gap-1 rounded-full gradient-love px-2.5 py-1 text-xs font-bold shadow-[0_4px_20px_-4px_hsl(350_80%_60%/0.6)]">
                 <Heart className="h-3 w-3 fill-white" /> {likes.length}
               </span>
-              {isDeveloper && (
-                <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-black shadow-[0_4px_20px_-4px_hsl(30_90%_55%/0.6)]">
-                  <Crown className="h-3 w-3" /> Developer
-                </span>
-              )}
-            </div>
+                          </div>
             <p className="mt-1.5 text-sm text-white/60">
               <span className="text-primary font-semibold">{likes.length}</span> people liked your profile
             </p>
@@ -369,14 +361,13 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                 {like.profile?.avatar_url ? (
                   <img
                     src={like.profile.avatar_url}
-                    alt={isPremium ? like.profile.display_name : "Liked you"}
-                    onClick={() => !isPremium && setShowUpgrade(true)}
-                    className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
-                      !isPremium ? "scale-110 blur-2xl" : "group-hover:scale-105"
+                    alt={like.profile.display_name}
+                                        className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
+                      "group-hover:scale-105"
                     }`}
                   />
                 ) : (
-                  <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 ${!isPremium ? "blur-xl" : ""}`} />
+                  <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 `} />
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 pointer-events-none" />
@@ -396,7 +387,7 @@ const LikesView = ({ onShowVisitors, onShowVIP }: LikesViewProps) => {
                 <div className="absolute inset-x-0 bottom-0 p-2.5">
                   <div className="flex items-center gap-1">
                     <p className="truncate text-sm font-bold text-white">
-                      {isPremium ? (like.profile?.display_name || "Someone") : "Someone"}
+                      {like.profile?.display_name || "Someone"}
                     </p>
                     <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-primary text-white" />
                   </div>

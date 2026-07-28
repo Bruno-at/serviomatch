@@ -42,7 +42,6 @@ const DiscoverView = ({ onShowFavorites, onShowBookmarks, onNavigateToChat }: Di
     return DEFAULT_FILTERS;
   });
   const [showFilters, setShowFilters] = useState(false);
-  const MAX_FREE_UNDOS = 3;
   const activeFilterCount = countActiveFilters(filters);
 
   // Hydrate filter preferences from server (overrides local on first load)
