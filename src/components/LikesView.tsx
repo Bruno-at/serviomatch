@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, MapPin, BadgeCheck, SlidersHorizontal } from "lucide-react";
+import { Heart, Eye, MapPin, BadgeCheck, SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import MatchPopup from "@/components/MatchPopup";
@@ -260,7 +260,6 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
           </div>
         </div>
 
-        )}
 
         <div className="mt-5 flex items-center gap-2">
           {([
