@@ -19,12 +19,11 @@ import ProfileCompletionRing from "./ProfileCompletionRing";
 
 interface ProfileViewProps {
   onShowReferrals?: () => void;
-  onShowVIP?: () => void;
   onShowDailyRewards?: () => void;
   onShowNotifications?: () => void;
 }
 
-const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNotifications }: ProfileViewProps) => {
+const ProfileView = ({ onShowReferrals, onShowDailyRewards, onShowNotifications }: ProfileViewProps) => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [editing, setEditing] = useState(false);
@@ -90,14 +89,10 @@ const ProfileView = ({ onShowReferrals, onShowVIP, onShowDailyRewards, onShowNot
       </div>
 
       {/* Quick Actions */}
-      <div className="w-full grid grid-cols-4 gap-2 mb-4">
+      <div className="w-full grid grid-cols-3 gap-2 mb-4">
         <button onClick={onShowReferrals} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
           <Users className="h-5 w-5 text-primary" />
           <span className="text-[9px] font-medium text-muted-foreground">Invite</span>
-        </button>
-        <button onClick={onShowVIP} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
-          <Crown className="h-5 w-5 text-yellow-500" />
-          <span className="text-[9px] font-medium text-muted-foreground">VIP</span>
         </button>
         <button onClick={onShowDailyRewards} className="flex flex-col items-center gap-1 rounded-xl bg-card p-3 shadow-sm">
           <Gift className="h-5 w-5 text-accent" />
