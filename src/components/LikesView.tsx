@@ -153,38 +153,20 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
     if (!user || pending) return;
     setPending(like.id);
     try {
-      // Reciprocal like + match creation via secure RPC (direct match inserts are blocked)
-      const res = await likeUser(user.id, like.liker_id);
+      // Reciprocal like + match creation + both-side notifications
+      const res = await likeBackAndMatch(
+        user.id,
+        { id: like.liker_id, name: like.profile?.display_name },
+        myProfile?.display_name,
+      );
       if (!res.ok || !res.matchId) {
         toast.error(res.error || "Could not create match");
         return;
       }
-      const matchId = res.matchId;
 
-
-      // Notify the other user
-      try {
-        await supabase.rpc("send_notification", {
-          _target_user_id: like.liker_id,
-          _type: "match",
-          _title: "It's a match! 💖",
-          _message: `You matched with ${myProfile?.display_name || "someone"}`,
-        });
-      } catch {}
-
-      // Self notification
-      try {
-        await supabase.from("notifications").insert({
-          user_id: user.id,
-          type: "match",
-          title: "It's a match! 💖",
-          message: `You matched with ${like.profile?.display_name || "someone"}`,
-        });
-      } catch {}
-
-      setLikes((prev) => prev.filter((l) => l.id !== like.id));
+      setLikes((prev) => removeMatchedFromLikes(prev, like.liker_id));
       setMatch({
-        matchId,
+        matchId: res.matchId,
         name: like.profile?.display_name || "Match",
         photo: like.profile?.avatar_url || null,
         likerId: like.liker_id,
@@ -193,6 +175,7 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
       setPending(null);
     }
   };
+
 
   const handleQuickMessage = async () => {
     if (!match || !user) return;
