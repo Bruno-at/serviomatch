@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import MatchPopup from "@/components/MatchPopup";
 import { toast } from "sonner";
-import { likeUser } from "@/lib/likes";
+import { likeBackAndMatch, removeMatchedFromLikes } from "@/lib/matchFlow";
 import { likeBackAndMatch, removeMatchedFromLikes } from "@/lib/matchFlow";
 
 
