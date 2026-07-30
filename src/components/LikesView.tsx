@@ -133,14 +133,10 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
   const filtered = useMemo(() => {
     const now = Date.now();
     if (filter === "new") return likes.filter((l) => now - new Date(l.created_at).getTime() < 24 * 60 * 60 * 1000);
-    if (filter === "recent") return likes.filter((l) => now - new Date(l.created_at).getTime() < 3 * 24 * 60 * 60 * 1000);
+    if (filter === "near") return likes.filter((l) => (l.profile?.distance_km ?? 99) <= 25);
     return likes;
   }, [likes, filter]);
 
-  const newCount = useMemo(
-    () => likes.filter((l) => Date.now() - new Date(l.created_at).getTime() < 24 * 60 * 60 * 1000).length,
-    [likes]
-  );
 
   const handleDislike = async (like: LikeEntry) => {
     if (!user) return;
