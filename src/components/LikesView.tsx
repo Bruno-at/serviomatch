@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, MapPin, BadgeCheck, SlidersHorizontal, X } from "lucide-react";
+import { Heart, Eye, SlidersHorizontal, X, Lock, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import MatchPopup from "@/components/MatchPopup";
@@ -26,7 +26,14 @@ interface LikesViewProps {
   onShowVisitors?: () => void;
 }
 
-type Filter = "all" | "new" | "recent";
+type Filter = "all" | "new" | "online" | "near";
+
+const TABS: { id: Filter; label: string; locked?: boolean }[] = [
+  { id: "all", label: "All likes" },
+  { id: "new", label: "New likes", locked: true },
+  { id: "online", label: "Online", locked: true },
+  { id: "near", label: "Near you", locked: true },
+];
 
 const buildQuickMessage = (name: string) => {
   const hour = new Date().getHours();
@@ -126,14 +133,10 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
   const filtered = useMemo(() => {
     const now = Date.now();
     if (filter === "new") return likes.filter((l) => now - new Date(l.created_at).getTime() < 24 * 60 * 60 * 1000);
-    if (filter === "recent") return likes.filter((l) => now - new Date(l.created_at).getTime() < 3 * 24 * 60 * 60 * 1000);
+    if (filter === "near") return likes.filter((l) => (l.profile?.distance_km ?? 99) <= 25);
     return likes;
   }, [likes, filter]);
 
-  const newCount = useMemo(
-    () => likes.filter((l) => Date.now() - new Date(l.created_at).getTime() < 24 * 60 * 60 * 1000).length,
-    [likes]
-  );
 
   const handleDislike = async (like: LikeEntry) => {
     if (!user) return;
@@ -203,21 +206,32 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
     setMatch(null);
   };
 
+  const boostCard = (
+    <div
+      key="boost-card"
+      className="flex aspect-[3/4] flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center backdrop-blur-md"
+    >
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(265_85%_60%)] to-[hsl(285_80%_55%)] shadow-[0_8px_28px_-8px_hsl(270_85%_60%/0.8)]">
+        <Zap className="h-6 w-6 fill-white text-white" />
+      </div>
+      <p className="text-[13px] font-semibold leading-snug text-white/90">
+        Get shown to more people to get 4x more likes.
+      </p>
+    </div>
+  );
+
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-[hsl(260_40%_6%)] via-[hsl(260_30%_5%)] to-[hsl(260_30%_4%)] text-white overflow-y-auto">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_at_top,hsl(330_90%_55%/0.18),transparent_60%)]" />
 
-      <div className="relative px-5 pt-6">
-        <div className="flex items-start justify-between">
+      <div className="relative mx-auto w-full max-w-5xl px-5 pt-6 sm:px-8">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-[34px] font-bold font-display leading-none tracking-tight">Likes You</h1>
-              <span className="flex items-center gap-1 rounded-full gradient-love px-2.5 py-1 text-xs font-bold shadow-[0_4px_20px_-4px_hsl(350_80%_60%/0.6)]">
-                <Heart className="h-3 w-3 fill-white" /> {likes.length}
-              </span>
-                          </div>
-            <p className="mt-1.5 text-sm text-white/60">
-              <span className="text-primary font-semibold">{likes.length}</span> people liked your profile
+            <h1 className="text-[30px] sm:text-[38px] font-bold font-display leading-tight tracking-tight">
+              Your likes list
+            </h1>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-white/60">
+              The faster you like them back, the higher your chance of chatting and dating!
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -228,7 +242,7 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
                 className="relative flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-medium text-white/80 backdrop-blur-md"
               >
                 <Eye className="h-3.5 w-3.5" />
-                Visitors
+                <span className="hidden sm:inline">Visitors</span>
                 <span className="absolute -top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
               </motion.button>
             )}
@@ -241,62 +255,52 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
           </div>
         </div>
 
-
-        <div className="mt-5 flex items-center gap-2">
-          {([
-            { id: "all", label: `All ${likes.length}` },
-            { id: "new", label: "New", badge: newCount },
-            { id: "recent", label: "Recent" },
-          ] as { id: Filter; label: string; badge?: number }[]).map((tab) => {
+        <div className="mt-5 -mx-5 flex items-center gap-2 overflow-x-auto scrollbar-hide px-5 sm:mx-0 sm:px-0">
+          {TABS.map((tab) => {
             const active = filter === tab.id;
             return (
               <motion.button
                 key={tab.id}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setFilter(tab.id)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                   active
                     ? "gradient-love text-white shadow-[0_6px_20px_-6px_hsl(350_80%_60%/0.6)]"
                     : "border border-white/10 bg-white/5 text-white/70"
                 }`}
               >
                 {tab.label}
-                {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                    active ? "bg-white/20" : "gradient-love text-white"
-                  }`}>
-                    {tab.badge}
-                  </span>
-                )}
+                {tab.locked && <Lock className="h-3 w-3 opacity-80" />}
               </motion.button>
             );
           })}
         </div>
       </div>
 
-      <div className="relative px-5 pt-5 pb-32 flex-1">
+      <div className="relative mx-auto w-full max-w-5xl flex-1 px-5 pt-5 pb-32 sm:px-8">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-white/5" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center text-center py-20"
-          >
-            <div className="rounded-full gradient-love p-6 mb-4 shadow-[0_10px_40px_-8px_hsl(350_80%_60%/0.5)]">
-              <Heart className="h-8 w-8 text-white" />
-            </div>
-            <p className="font-semibold text-white">No likes yet</p>
-            <p className="text-sm text-white/50 mt-1 max-w-[220px]">
-              Keep swiping — your first like is on the way!
-            </p>
-          </motion.div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {boostCard}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex aspect-[3/4] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+            >
+              <div className="rounded-full gradient-love p-4 mb-3 shadow-[0_10px_40px_-8px_hsl(350_80%_60%/0.5)]">
+                <Heart className="h-6 w-6 text-white" />
+              </div>
+              <p className="font-semibold text-white">No likes yet</p>
+              <p className="text-xs text-white/50 mt-1">Keep swiping — your first like is on the way!</p>
+            </motion.div>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             <AnimatePresence>
             {filtered.map((like, i) => (
               <motion.div
@@ -312,38 +316,25 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
                   <img
                     src={like.profile.avatar_url}
                     alt={like.profile.display_name}
-                                        className={`h-full w-full object-cover transition-all duration-500 cursor-pointer ${
-                      "group-hover:scale-105"
-                    }`}
+                    className="h-full w-full scale-110 object-cover blur-xl transition-all duration-500"
                   />
                 ) : (
-                  <div className={`h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 `} />
+                  <div className="h-full w-full bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/30 blur-xl" />
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/30 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/25 pointer-events-none" />
 
                 <div className="absolute top-2.5 right-2.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-md">
                   {timeAgo(like.created_at)}
                 </div>
 
-
                 <div className="absolute inset-x-0 bottom-0 p-2.5">
-                  <div className="flex items-center gap-1">
-                    <p className="truncate text-sm font-bold text-white">
-                      {like.profile?.display_name || "Someone"}
-                    </p>
-                    <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-primary text-white" />
-                  </div>
-                  <p className="text-[11px] text-white/80">
-                    {like.profile?.age ?? 24}
-                    {like.profile?.location ? `, ${like.profile.location}` : ", Kampala"}
-                  </p>
-                  <div className="mt-1.5 flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <motion.button
                       whileTap={{ scale: 0.85 }}
                       onClick={(e) => { e.stopPropagation(); handleDislike(like); }}
-                      className="flex h-9 flex-1 items-center justify-center rounded-full border border-white/15 bg-black/50 backdrop-blur-md transition hover:bg-black/70"
-                      aria-label="Dislike"
+                      className="flex h-10 flex-1 items-center justify-center rounded-full border border-white/15 bg-black/50 backdrop-blur-md transition hover:bg-black/70"
+                      aria-label="Dismiss"
                     >
                       <X className="h-4 w-4 text-white/90" />
                     </motion.button>
@@ -351,21 +342,22 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
                       whileTap={{ scale: 0.85 }}
                       disabled={pending === like.id}
                       onClick={(e) => { e.stopPropagation(); handleLikeBack(like); }}
-                      className="flex h-9 flex-[1.4] items-center justify-center gap-1 rounded-full gradient-love shadow-[0_6px_20px_-6px_hsl(350_80%_60%/0.7)] disabled:opacity-60"
+                      className="flex h-10 flex-1 items-center justify-center rounded-full gradient-love shadow-[0_6px_20px_-6px_hsl(350_80%_60%/0.7)] disabled:opacity-60"
                       aria-label="Like back"
                     >
                       <Heart className="h-4 w-4 fill-white text-white" />
-                      <span className="text-[11px] font-bold text-white">Like</span>
                     </motion.button>
                   </div>
                 </div>
               </motion.div>
             ))}
             </AnimatePresence>
+            {boostCard}
           </div>
         )}
 
       </div>
+
 
       {/* Match popup */}
       <MatchPopup
