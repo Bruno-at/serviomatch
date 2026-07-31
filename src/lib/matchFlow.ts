@@ -38,6 +38,10 @@ export async function likeBackAndMatch(
     return { ok: false, error: res.error || "Could not create match" };
   }
 
+  markMatchHandledLocally(res.matchId);
+
+
+
   let notifiedOther = false;
   let notifiedSelf = false;
 
