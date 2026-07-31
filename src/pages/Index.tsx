@@ -229,6 +229,13 @@ const Index = () => {
       <DailyRewards open={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
       <NotificationsView open={showNotifications} onClose={() => setShowNotifications(false)} />
       <IncomingCallOverlay />
+      <GlobalMatchListener
+        onOpenChat={(matchId, profile) => {
+          handleNavigate("matches");
+          setDirectChat({ matchId, profile });
+        }}
+      />
+
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}
