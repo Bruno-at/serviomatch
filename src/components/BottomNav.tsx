@@ -17,12 +17,12 @@ const coreTabs = [
   { id: "discover", icon: Flame, label: "Discover" },
   { id: "matches", icon: Users, label: "Matches" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
-  { id: "nearby", icon: MapPin, label: "Nearby" },
+  { id: "likes", icon: Heart, label: "Likes" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
 const moreTabs = [
-  { id: "likes", icon: Heart, label: "Likes You", color: "text-primary" },
+  { id: "nearby", icon: MapPin, label: "Nearby", color: "text-sky-500" },
   { id: "live", icon: Radio, label: "Go Live", color: "text-red-500" },
   { id: "speed", icon: Zap, label: "Speed Dating", color: "text-yellow-500" },
   { id: "crush", icon: Lock, label: "Secret Crush", color: "text-pink-500" },
