@@ -17,12 +17,12 @@ const coreTabs = [
   { id: "discover", icon: Flame, label: "Discover" },
   { id: "matches", icon: Users, label: "Matches" },
   { id: "messages", icon: MessageCircle, label: "Chat" },
-  { id: "nearby", icon: MapPin, label: "Nearby" },
+  { id: "likes", icon: Heart, label: "Likes" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
 const moreTabs = [
-  { id: "likes", icon: Heart, label: "Likes You", color: "text-primary" },
+  { id: "nearby", icon: MapPin, label: "Nearby", color: "text-sky-500" },
   { id: "live", icon: Radio, label: "Go Live", color: "text-red-500" },
   { id: "speed", icon: Zap, label: "Speed Dating", color: "text-yellow-500" },
   { id: "crush", icon: Lock, label: "Secret Crush", color: "text-pink-500" },
@@ -38,7 +38,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
     else if (id === "challenges" && onChallenges) onChallenges();
     else if (id === "live" && onLive) onLive();
     else if (id === "crush" && onCrush) onCrush();
-    else if (id === "likes" && onLikes) onLikes();
+    else if (id === "nearby") onNavigate("nearby");
   };
 
   return (
@@ -95,7 +95,11 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
             return (
               <button
                 key={tab.id}
-                onClick={() => { setMoreOpen(false); onNavigate(tab.id); }}
+                onClick={() => {
+                  setMoreOpen(false);
+                  if (tab.id === "likes" && onLikes) onLikes();
+                  else onNavigate(tab.id);
+                }}
                 className="relative flex flex-col items-center gap-0.5 px-3 py-1"
               >
                 {isActive && (
@@ -105,9 +109,15 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
+                {tab.id === "likes" && likesBadge > 0 && (
+                  <span className="absolute right-1 top-0 z-10 min-w-[16px] h-[16px] flex items-center justify-center rounded-full gradient-love px-1 text-[9px] font-bold text-primary-foreground">
+                    {likesBadge > 9 ? "9+" : likesBadge}
+                  </span>
+                )}
                 <tab.icon
                   className={`h-5 w-5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 />
+
                 <span
                   className={`text-[10px] font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 >
@@ -121,12 +131,8 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
             onClick={() => setMoreOpen((v) => !v)}
             className="relative flex flex-col items-center gap-0.5 px-3 py-1"
           >
-            {likesBadge > 0 && !moreOpen && (
-              <span className="absolute right-1 top-0 z-10 min-w-[16px] h-[16px] flex items-center justify-center rounded-full gradient-love px-1 text-[9px] font-bold text-primary-foreground">
-                {likesBadge > 9 ? "9+" : likesBadge}
-              </span>
-            )}
             {moreOpen ? (
+
               <X className="h-5 w-5 text-primary transition-colors" />
             ) : (
               <Menu className="h-5 w-5 text-muted-foreground transition-colors" />
