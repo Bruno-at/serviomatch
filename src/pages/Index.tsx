@@ -174,11 +174,17 @@ const Index = () => {
   };
 
   const handleShowLikes = () => {
+    setSavedView(null);
+    setDirectChat(null);
+    setShowVisitors(false);
+    setShowReferrals(false);
     setShowSpeedDating(false);
     setShowChallenges(false);
     setShowLive(false);
     setShowCrush(false);
     setShowLikes(true);
+    setActiveTab("likes");
+
     if (user) {
       // mark current count as seen
       supabase
