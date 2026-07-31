@@ -95,7 +95,11 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
             return (
               <button
                 key={tab.id}
-                onClick={() => { setMoreOpen(false); onNavigate(tab.id); }}
+                onClick={() => {
+                  setMoreOpen(false);
+                  if (tab.id === "likes" && onLikes) onLikes();
+                  else onNavigate(tab.id);
+                }}
                 className="relative flex flex-col items-center gap-0.5 px-3 py-1"
               >
                 {isActive && (
@@ -105,9 +109,15 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
+                {tab.id === "likes" && likesBadge > 0 && (
+                  <span className="absolute right-1 top-0 z-10 min-w-[16px] h-[16px] flex items-center justify-center rounded-full gradient-love px-1 text-[9px] font-bold text-primary-foreground">
+                    {likesBadge > 9 ? "9+" : likesBadge}
+                  </span>
+                )}
                 <tab.icon
                   className={`h-5 w-5 transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 />
+
                 <span
                   className={`text-[10px] font-medium transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 >
