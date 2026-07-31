@@ -196,7 +196,7 @@ const MatchesView = () => {
   ];
 
   return (
-    <div className="flex h-full flex-col px-6 pt-4">
+    <div className="flex min-h-full flex-col px-6 pt-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Matches</h1>
@@ -281,7 +281,7 @@ const MatchesView = () => {
           <p className="text-sm text-muted-foreground mt-1 max-w-[220px]">{search || filterBy !== "all" ? "Try adjusting your filters" : "Keep swiping to find your perfect match!"}</p>
         </motion.div>
       ) : (
-        <div className="flex flex-col gap-2 overflow-y-auto flex-1 pb-24">
+        <div className="flex flex-col gap-2 pb-24">
           {filtered.map((match, i) => (
             <motion.div key={match.matchId} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }} className="rounded-2xl bg-card border border-border p-3 shadow-sm">
