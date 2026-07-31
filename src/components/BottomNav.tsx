@@ -38,7 +38,7 @@ const BottomNav = ({ active, onNavigate, onSpeedDating, onChallenges, onLive, on
     else if (id === "challenges" && onChallenges) onChallenges();
     else if (id === "live" && onLive) onLive();
     else if (id === "crush" && onCrush) onCrush();
-    else if (id === "likes" && onLikes) onLikes();
+    else if (id === "nearby") onNavigate("nearby");
   };
 
   return (
