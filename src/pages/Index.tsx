@@ -20,6 +20,7 @@ import ReferralSystem from "@/components/ReferralSystem";
 import DailyRewards from "@/components/DailyRewards";
 import NotificationsView from "@/components/NotificationsView";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
+import GlobalMatchListener from "@/components/GlobalMatchListener";
 import Auth from "./Auth";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -228,6 +229,13 @@ const Index = () => {
       <DailyRewards open={showDailyRewards} onClose={() => setShowDailyRewards(false)} />
       <NotificationsView open={showNotifications} onClose={() => setShowNotifications(false)} />
       <IncomingCallOverlay />
+      <GlobalMatchListener
+        onOpenChat={(matchId, profile) => {
+          handleNavigate("matches");
+          setDirectChat({ matchId, profile });
+        }}
+      />
+
       <BottomNav
         active={activeTab}
         onNavigate={handleNavigate}

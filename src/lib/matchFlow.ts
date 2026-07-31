@@ -11,6 +11,18 @@ export type MatchFlowResult = {
   notifiedSelf?: boolean;
 };
 
+/** Match ids whose popup was already shown locally by the initiating user. */
+const locallyHandledMatches = new Set<string>();
+
+export function markMatchHandledLocally(matchId: string) {
+  locallyHandledMatches.add(matchId);
+}
+
+/** True if this client already showed UI for the match (avoids duplicate popups). */
+export function wasMatchHandledLocally(matchId: string) {
+  return locallyHandledMatches.has(matchId);
+}
+
 /**
  * Likes back a user who already liked me: creates the match through the secure
  * RPC and pushes a match notification to BOTH sides of the match.
@@ -25,6 +37,10 @@ export async function likeBackAndMatch(
   if (!res.ok || !res.matchId) {
     return { ok: false, error: res.error || "Could not create match" };
   }
+
+  markMatchHandledLocally(res.matchId);
+
+
 
   let notifiedOther = false;
   let notifiedSelf = false;

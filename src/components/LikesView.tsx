@@ -118,7 +118,27 @@ const LikesView = ({ onShowVisitors }: LikesViewProps) => {
           setLikes((prev) => [enriched[0], ...prev.filter((l) => l.liker_id !== newLike.liker_id)]);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "matches" },
+        (payload) => {
+          const m = payload.new as any;
+          if (m.user1_id !== user.id && m.user2_id !== user.id) return;
+          const otherId = m.user1_id === user.id ? m.user2_id : m.user1_id;
+          setLikes((prev) => removeMatchedFromLikes(prev, otherId));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "likes" },
+        (payload) => {
+          const old = payload.old as any;
+          if (old?.liked_id && old.liked_id !== user.id) return;
+          setLikes((prev) => prev.filter((l) => l.id !== old?.id));
+        }
+      )
       .subscribe();
+
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
